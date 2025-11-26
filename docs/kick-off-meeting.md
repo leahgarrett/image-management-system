@@ -41,7 +41,7 @@
 A simple system that:  
 • indexes media and metadata  
 • allows fast search and filtering  
-• supports tagging and descriptions  
+• supports tagging and descriptions, uploaded and added later  
 • grows over time without heavy tooling
 
 ---
