@@ -156,6 +156,22 @@ See also: [UI Flows](./ui-flows.md).
 - Per-image overrides allow fine tuning.
 - Recently used tags help avoid typos and duplicates.
 
+## Review
+
+    +-------------------------------------------------------+
+    | Review & Confirm                                      |
+    +-------------------------------------------------------+
+    
+    Step 3 of 3
+    
+    You are about to upload 50 images with the following tags:
+    
+    [pill] [pill] [pill] ...
+    
+    Confirm that everything looks good before proceeding.
+    
+    [ Back ]
+    [ Confirm & Upload ]
 ---
 
 ## Publish locally
