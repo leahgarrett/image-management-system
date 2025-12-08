@@ -33,6 +33,41 @@ Why we do this:
 - Makes PRs easy to understand
 - Helps multiple people work in parallel
 
+## Commit messages
+
+Write clear, descriptive commit messages using this format:
+
+`type: short description`
+
+**Common types:**
+
+- `feat:` — new feature
+- `fix:` — bug fix
+- `docs:` — documentation changes
+- `refactor:` — code restructuring (no functional change)
+- `test:` — add or update tests
+- `chore:` — maintenance (dependencies, tooling, config)
+- `style:` — formatting changes (no code logic change)
+
+**Examples:**
+
+```
+docs: create project conventions doc
+feat: add image upload endpoint
+fix: resolve duplicate tag issue
+refactor: simplify metadata extraction
+test: add unit tests for tag validation
+chore: update npm dependencies
+```
+
+**Guidelines:**
+
+- Use lowercase for the type and description
+- Keep the summary line under 72 characters
+- Use imperative mood ("add" not "added" or "adds")
+- Reference issue numbers when relevant (`fix: resolve tag duplication (#42)`)
+- Add a detailed explanation in the body if the change is complex
+
 ## Issues
 
 We use GitHub issues to track spikes, tasks, design work, documentation, bugs, and questions.
