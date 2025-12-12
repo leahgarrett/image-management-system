@@ -12,10 +12,11 @@ Version one focuses on browsing, simple search, uploading, batch tagging and a b
 ```mermaid
 flowchart TD
     Home[Home] --> Browse[Browse Grid]
-    Home --> Admin --> Upload[Upload Flow<br/> ]
-    Home --> Admin --> Settings[Admin Settings<br/>]
-    Home --> Admin --> Publish[Publish Locally<br/>]
-    Home --> Admin --> People[People & Roles<br/>]
+    Home --> Admin
+    Admin --> Upload[Upload Flow]
+    Admin --> Settings[Admin Settings<br/>]
+    Admin --> Publish[Publish Locally<br/>]
+    Admin --> People[People & Roles<br/>]
 
     Browse --> Detail[Image Detail]
     Browse --> SearchBar[Keyword / Tag / Comment Search]
