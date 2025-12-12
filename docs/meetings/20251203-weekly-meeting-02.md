@@ -27,41 +27,41 @@
 ## Actions
 
 - Project Conventions
-  - Add commit message standards (branch prefixes, issue refs, lowercase style) to `CONTRIBUTING.md`. Owner: Speaker 1
-  - Draft label taxonomy (e.g., `priority/*`, `people/*`, `area/*`) for team review before mass-adding. Owner: Speaker 1
-  - Enable branch protections (required reviews/checks). Owner: Speaker 1
+  - Add commit message standards (branch prefixes, issue refs, lowercase style) to project conventions. Owner: Leah
+  - Draft label taxonomy (e.g., `priority/*`, `people/*`, `area/*`) for team review before mass-adding. Owner: Leah
+  - Enable branch protections (required reviews/checks). Owner: Leah
 
 - Storage & Costs
-  - Extend S3 cost estimation from Small to Medium and Large tiers; include access frequency assumptions. Owner: Speaker 3
-  - Document S3 class selection: Standard for thumbnails/web, Glacier (Deep Archive) for backups; add rationale. Owner: Speaker 3
-  - Evaluate Intelligent Tiering vs manual movement; recommend approach and ownership. Owner: Speaker 3
-  - Confirm AWS region (Melbourne) and note implications. Owner: Speaker 3
+  - Extend S3 cost estimation from Small to Medium and Large tiers; include access frequency assumptions. Owner: Iryna
+  - Document S3 class selection: Standard for thumbnails/web, Glacier (Deep Archive) for backups; add rationale. Owner: Iryna
+  - Evaluate Intelligent Tiering vs manual movement; recommend approach and ownership. Owner: Iryna
+  - Confirm AWS region (Melbourne) and note implications. Owner: Iryna
 
 - Resilience & Delivery
-  - Spike on CloudFront CDN for image delivery; caching for high-traffic events (e.g., weddings). Owner: Speaker 6
-  - Assess cross-region replication for durability (e.g., AU → SG/US). Owner: Speaker 6
+  - Spike on CloudFront CDN for image delivery; caching for high-traffic events (e.g., weddings). Owner: _  - wait until this is needed
+  - Assess cross-region replication for durability (e.g., AU → SG/US).     - wait until this is needed
 
 - Architecture
-  - Create a “High-Level Architecture” issue: 2‑tier vs 3‑tier, core flows, constraints; track via spiral iterations. Owner: Speaker 1
-  - Add Mermaid diagrams for main flows (browse, image detail, upload); trim unnecessary arrows and define Admin/Maintainer role scope on diagrams. Owner: Speaker 1
+  - Create a “High-Level Architecture” issue: 2‑tier vs 3‑tier, core flows, constraints; track via spiral iterations. Owner: Leah
+  - Add Mermaid diagrams for main flows (browse, image detail, upload); trim unnecessary arrows and define Admin/Maintainer role scope on diagrams. Owner: Leah
 
 - Data Model & Search
-  - Define entities: group, collection/album, media, tags, comments, roles. Owner: Speaker 6
-  - Propose tag namespaces and controlled vocab/aliasing to avoid `Bob/Robert` drift. Owner: Speaker 4
-  - Choose date storage formats for flexible search (year/decade/range); document “best match” rules. Owner: Speaker 4
+  - Define entities: group, collection/album, media, tags, comments, roles. Owner: Fabs
+  - Propose tag namespaces and controlled vocab/aliasing to avoid `Bob/Robert` drift. Owner: Fabs
+  - Choose date storage formats for flexible search (year/decade/range); document “best match” rules. Owner: Fabs
 
 - UI & UX
-  - Continue ASCII wireframes: filter placement, people/date/tag filters, admin settings. Owner: Speaker 1
-  - Investigate upload constraints and chunked uploads; add preview thumbnails step. Owner: Speaker 1
-  - Define search UX toggles (tags vs comments vs all text) and display transparency (e.g., “best match” note). Owner: Speaker 1
+  - Continue ASCII wireframes: filter placement, people/date/tag filters, admin settings. Owner: Leah
+  - Investigate upload constraints and chunked uploads; add preview thumbnails step. Owner: Leah
+  - Define search UX toggles (tags vs comments vs all text) and display transparency (e.g., “best match” note). Owner: Leah
 
 - Roles & Permissions
-  - Align on role names and scopes (Maintainer/Admin/Contributor/Observer); specify Observer rights (edit/delete own comments). Owner: Speaker 6
-  - Map capabilities to UI (who sees settings, destructive actions). Owner: Speaker 6
+  - Align on role names and scopes (Maintainer/Admin/Contributor/Observer); specify Observer rights (edit/delete own comments). Owner: Laura
+  - Map capabilities to UI (who sees settings, destructive actions).  - can review next meeting
 
 - Collaboration
-  - Start focused sub-thread on tags/data structures (Fab to convene, collect examples from other projects). Owner: Speaker 4
-  - Keep PRs visible early (WIP allowed); merge once Medium/Large estimates and agreed changes are complete. Owner: Speaker 1
+  - Start focused sub-thread on tags/data structures (Fab to convene, collect examples from other projects). Owner: Fabs
+  - Keep PRs visible early (WIP allowed); merge once Medium/Large estimates and agreed changes are complete. Owner: Leah
 
 ## Next Meeting Prep
 - Review updated S3 estimates and tiering recommendation.
