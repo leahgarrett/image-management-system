@@ -33,6 +33,30 @@ Why we do this:
 - Makes PRs easy to understand
 - Helps multiple people work in parallel
 
+## Git branching strategy
+
+We follow a **trunk-based development** approach:
+
+- `main` is the single long-lived branch
+- All feature work happens in short-lived branches
+- Branches are merged back to `main` frequently (ideally daily or every few days)
+- All merges to `main` use **squash merge** to keep history clean
+- The main branch is protected in Github using a ruleset that requires at least one review and passing checks before merging
+
+**Why trunk-based?**
+
+- Reduces merge conflicts
+- Encourages small, incremental changes
+- Simplifies CI/CD and deployment
+- Keeps the team aligned on a single source of truth
+
+**Merge strategy:**
+
+- Use **squash and merge** when merging PRs to `main`
+- This combines all commits from the branch into a single commit
+- Write a clear commit message for the squashed commit
+- Delete the feature branch after merging
+
 ## Commit messages
 
 Write clear, descriptive commit messages using this format:
