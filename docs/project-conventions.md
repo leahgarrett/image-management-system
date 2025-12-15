@@ -92,6 +92,10 @@ chore: update npm dependencies
 - Reference issue numbers when relevant (`fix: resolve tag duplication (#42)`)
 - Add a detailed explanation in the body if the change is complex
 
+For additional special cases we will follow the Conventional Commits specification:    
+https://www.conventionalcommits.org/en/v1.0.0/
+
+
 ## Issues
 
 We use GitHub issues to track spikes, tasks, design work, documentation, bugs, and questions.
