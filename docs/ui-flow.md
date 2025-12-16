@@ -11,9 +11,9 @@ Version one focuses on browsing, simple search, uploading, batch tagging and a b
 
 ```mermaid
 flowchart TD
-    Home[Home] --> Browse[Browse Grid]
+    Home[Home] --> Browse
     Home --> Admin
-    Admin --> Upload[Upload Flow]
+    Home --> Upload[Upload Flow]
     Admin --> Settings[Admin Settings<br/>]
     Admin --> Publish[Publish Locally<br/>]
     Admin --> People[People & Roles<br/>]
@@ -32,8 +32,10 @@ flowchart TD
 
 ### Actions
 - Browse all images  
-- Use the collection dropdown (defaults to "All")  
-- Upload (admin only)  
+    - View image detail  
+    - Search (tags, comments, text)
+- Upload (images)  
+- Admin settings (admin only)
 - Publish (admin only)  
 
 Light and simple.
@@ -51,18 +53,17 @@ flowchart TD
 
     Browse --> Filters
     Browse --> Search
-    Filters --> Browse
-    Search --> Browse
     Browse --> Detail
 ```
 
 ### Notes
 - Original aspect ratio thumbnails  
 - Multi-select filters  
-- Search supports:  
+- Search supports searching for search term in:  
   - tags  
   - comments  
-  - all text fields  
+  - all meta data text fields  
+- SHould also be able to search by date range 
 
 ---
 
@@ -81,13 +82,13 @@ flowchart TD
 ```
 
 ### Notes
-- Admins can tag + comment  
+- Users can tag + comment  
 - Casuals browse only  
 - EXIF hidden behind toggle  
 
 ---
 
-## 5. Upload flow (admin)
+## 5. Upload flow
 
 ```mermaid
 flowchart TD
@@ -130,7 +131,7 @@ flowchart TD
 
 ---
 
-## 8. Admin settings (UI only)
+## 8. Admin settings 
 
 ```mermaid
 flowchart TD
@@ -146,7 +147,6 @@ flowchart TD
 - No favourites  
 - No albums  
 - No moderation workflow  
-- Comments + tags only for admins  
+- Tags will encourage using an existing tag over creating a new one  
 - EXIF hidden  
-- Access settings are UI-only  
 - Publish flow is single-step  

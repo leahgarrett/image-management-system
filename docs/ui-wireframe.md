@@ -29,8 +29,8 @@ See also: [UI Flows](./ui-flows.md).
     
     Welcome back
     
-    [ Browse Images ]      [ Upload Images ] (admin only)
-    [ Publish Locally ]    [ Admin Settings ] (admin only)
+    [ Browse Images ]      [ Publish Locally ] (admin only)
+    [ Upload Images ]    [ Admin Settings ] (admin only)
     
     Recent activity:
     [ thumbnail ][ thumbnail ][ thumbnail ][ thumbnail ]
