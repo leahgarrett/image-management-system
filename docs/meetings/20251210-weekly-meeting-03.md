@@ -71,17 +71,17 @@ Discussed meeting structure improvements, and project planning. Key focus areas 
 Note: these were automatically generated from meeting discussion. Mostly these are small admin tasks or updates to large tasks. We can review these in the next meeting and make any **Issues** as required.
 
 ### Leah
-- [ ] Set up recurring meeting to avoid link issues
-- [ ] Go over project conventions document offline with squash commits and feedback from Laura
-- [ ] Add both Iryna and Laura as reviewers to existing PRs so they can be merged
-- [ ] Update convention document to explain rule set for main branch protection
+- [x] Set up recurring meeting to avoid link issues
+- [x] Go over project conventions document offline with squash commits and feedback from Laura
+- [x] Add both Iryna and Laura as reviewers to existing PRs so they can be merged
+- [x] Update convention document to explain rule set for main branch protection
 - [ ] Revise UI/UX document for consistent terminology and incorporate today's discussion
 - [ ] Create roadmap document
-- [ ] Start thinking about project architecture ahead of next week
-- [ ] Ask Fabs if she's okay with publishing her thoughts and refinements somewhere
-- [ ] Give feedback to Fabs about preference for keeping tags flat rather than occasion structure
-- [ ] Check with Fabs about meeting time preference and set next meeting accordingly
-- [ ] Publish meeting notes from last time and today using AI transcript
+- [x] Start thinking about project architecture ahead of next week
+- [x] Ask Fabs if she's okay with publishing her thoughts and refinements somewhere
+- [x] Give feedback to Fabs about preference for keeping tags flat rather than occasion structure
+- [x] Check with Fabs about meeting time preference and set next meeting accordingly
+- [x] Publish meeting notes from last time and today using AI transcript
 
 ### Laura
 - [ ] Update roles page to use "admin" and "casual" instead of "maintainer" and "observer"
