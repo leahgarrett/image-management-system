@@ -108,14 +108,6 @@ Note: these were automatically generated from meeting discussion. Mostly these a
 
 ---
 
-## Personal Updates
-
-- **Iryna:** Had two job interviews this week, including first behavioral interview; awaiting results
-- **Leah:** Applied for position requiring portfolio creation; took longer than expected but valuable exercise
-- **Laura:** Managing health and energy after redundancy mid-October and surgery; focusing on self-care and gradual return to activities
-
----
-
 ## Notes
 
 - Iterative planning approach using spiral model for continuous refinement
