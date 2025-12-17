@@ -1,11 +1,11 @@
 # Roles and permissions
 
-> **Note:** This pre-first release documentation outlines a possible future state and is subject to change. Features such as the “Contributor” and “Observer” roles may be deferred beyond the MVP. Similarly, entities such as "Custom metadata" may be renamed or removed as modelling evolves. Lastly, the Notes section is intended for project collaborators and can be removed prior to the first release.
+> **Note:** This pre-first release documentation outlines a possible future state and is subject to change. Features such as the “Contributor” and “Casual” roles may be deferred beyond the MVP. Similarly, entities such as "Custom metadata" may be renamed or removed as modelling evolves. Lastly, the Notes section is intended for project collaborators and can be removed prior to the first release.
 
 A user is assigned one of the following roles for a given Group:
-- Maintainer
+- Admin
 - Contributor
-- Observer
+- Casual
 
 ---
 
@@ -16,14 +16,7 @@ A user is assigned one of the following roles for a given Group:
 
 - [Entities](#entities)
 - [Scopes](#scopes)
-  - [Media](#media)
-  - [Collections](#collections)
-  - [Groups](#groups)
-  - [Backups](#backups)
 - [Roles](#roles)
-  - [Maintainer](#maintainer)
-  - [Contributor](#contributor)
-  - [Observer](#observer)
 - [Notes](#notes)
 
 <!-- /code_chunk_output -->
@@ -60,14 +53,16 @@ Possible user actions assigned to each entity, or domain (e.g. "Media"):
 
 ### Collections
 
-| Scope               | Meaning                             |
-| ------------------- | ----------------------------------- |
-| `collection:read`   | Browse/view albums                  |
-| `collection:create` | Create albums                       |
-| `collection:update` | Modify album membership or metadata |
-| `collection:delete` | Delete albums                       |
-| `collection:share`  | Share albums                        |
-| `collection:invite` | Invite collaborators                |
+| Scope                | Meaning                                           |
+| -------------------- | ------------------------------------------------- |
+| `collection:read`    | Browse/view albums                                |
+| `collection:create`  | Create albums                                     |
+| `collection:publish` | Publish/finalise a set of changes to a collection |
+| `collection:update`  | Modify album membership or metadata               |
+| `collection:delete`  | Delete albums                                     |
+| `collection:share`   | Share albums                                      |
+| `collection:invite`  | Invite collaborators                              |
+
 
 ### Groups
 
@@ -87,9 +82,9 @@ Possible user actions assigned to each entity, or domain (e.g. "Media"):
 
 ## Roles
 
-### Maintainer
+### Admin
 
-Maintainers are the super-users of their Groups and granted the following scopes:
+Admins are the super-users of their Groups and granted the following scopes:
 
 ``` yaml
 media:
@@ -101,6 +96,7 @@ media:
 collection:
   - read
   - create
+  - publish
   - update
   - delete
   - share
@@ -129,15 +125,16 @@ media:
 collection:
   - read
   - create
+  - publish
   - update
   - delete
   - share
   - invite
 ```
 
-### Observer
+### Casual
 
-Observers are Group members with a more passive level of participation. This role is suitable for people who are hesitant about, or uncomfortable with, having deletion permissions.
+Casuals are Group members with a more passive level of participation. This role is suitable for people who are hesitant about, or uncomfortable with, having deletion permissions.
 
 ``` yaml
 media:
@@ -152,9 +149,9 @@ collection:
 ## Notes
 
 - A given user is limited only to the Groups, Collections, etc. they are granted access to
-- For the first iteration of this project, perhaps all users are Maintainers (and Contributors and Observers are added later)
-- Consider use of inheritance (e.g. does a Maintainer always have administrative privileges over all Collections in their Group?)
+- For the first iteration of this project, perhaps all users are Admins (and Contributors and Casuals are added later)
+- Consider use of inheritance (e.g. does an Admin always have administrative privileges over all Collections in their Group?)
 - Assumption: share links are not public (not by default, anyway)
 - Potential future feature: lightweight custom roles
 - Potential future feature: restrict downloads
-- Consider adding social-specific scopes, to allow Observers to be able to edit/delete their own social interactions (e.g. comments, likes)
+- Consider adding social-specific scopes, to allow Casuals to be able to edit/delete their own social interactions (e.g. comments, likes)
