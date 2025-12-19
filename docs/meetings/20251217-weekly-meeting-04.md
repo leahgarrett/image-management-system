@@ -18,7 +18,7 @@ https://www.youtube.com/watch?v=UY8pXVBtG5Q
 
 ### Backend Tech Stack Decision Meeting
 
-The team discussed backend technology options, with Node, Python, and Go being considered for microservices, while Python was suggested for handling image metadata due to its extensive libraries. They agreed to keep the backend as Node to support the backend and data upload functionality, while React was chosen for the frontend due to its popularity and support for file uploads. The team decided to research available libraries for their features and investigate the flexibility of each technology stack before making final decisions. They also considered implementing an ingestion API with multiple microservices behind it to handle tasks like thumbnail creation and metadata extraction.
+The team discussed backend technology options, with Node, Python, and Go being considered for microservices, while Python was suggested for handling image metadata due to its extensive libraries. They agreed to keep the backend as Node to support the backend and data upload functionality, while React was chosen for the frontend due to its popularity and support for file uploads. The team decided to research available libraries for their features and investigate the flexibility of each technology stack before making final decisions. They also considered implementing an ingestion API with one or more microservices behind it to handle tasks like thumbnail creation and metadata extraction.
 
 ### AI Coding Tools and Future Implications
 
