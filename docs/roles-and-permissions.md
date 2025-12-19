@@ -1,11 +1,11 @@
 # Roles and permissions
 
-> **Note:** This pre-first release documentation outlines a possible future state and is subject to change. Features such as the “Contributor” and “Casual” roles may be deferred beyond the MVP. Similarly, entities such as "Custom metadata" may be renamed or removed as modelling evolves. Lastly, the Notes section is intended for project collaborators and can be removed prior to the first release.
+> **Note:** This pre-first release documentation outlines a possible future state and is subject to change. Features such as the “Casual” role and "Backups" are deferred beyond V1. Similarly, entities such as "Custom metadata" may be renamed or removed as modelling evolves. Lastly, the [Notes](#notes) section is intended for project collaborators and can be removed prior to the first release.
 
 A user is assigned one of the following roles for a given Group:
 - Admin
 - Contributor
-- Casual
+- Casual *(deferred beyond V1)*
 
 ---
 
@@ -31,11 +31,13 @@ Entities users can view (or manipulate), based on their roles:
 - Media resources (e.g. images, videos)
   - image/video data
   - image metadata (e.g. EXIF data)
-  - custom metadata (e.g. user-defined tags)
-  - social: comments, votes, etc.
+  - custom metadata
+    - tags
+    - comments
+    - deletion flag with comment *(deferred beyond V1)*
 - Collections (e.g. albums)
 - Groups (e.g. families, community groups, "orgs")
-- Backups
+- Backups *(deferred beyond V1)*
 
 ## Scopes
 
@@ -43,25 +45,24 @@ Possible user actions assigned to each entity, or domain (e.g. "Media"):
 
 ### Media
 
-| Scope          | Meaning                             |
-| -------------- | ----------------------------------- |
-| `media:read`   | Browse/search/view media + metadata |
-| `media:create` | Upload new media                    |
-| `media:update` | Edit metadata, tags, etc.           |
-| `media:delete` | Delete media                        |
-| `media:share`  | Share media (links, permissions)    |
+| Scope          | Meaning                                    |
+| -------------- | ------------------------------------------ |
+| `media:read`   | Browse/search/view media + metadata        |
+| `media:create` | Upload new media                           |
+| `media:update` | Edit custom metadata (tagging, commenting) |
+| `media:delete` | Delete media                               |
+| `media:share`  | Share media (links, permissions)           |
 
 ### Collections
 
-| Scope                | Meaning                                           |
-| -------------------- | ------------------------------------------------- |
-| `collection:read`    | Browse/view albums                                |
-| `collection:create`  | Create albums                                     |
-| `collection:publish` | Publish/finalise a set of changes to a collection |
-| `collection:update`  | Modify album membership or metadata               |
-| `collection:delete`  | Delete albums                                     |
-| `collection:share`   | Share albums                                      |
-| `collection:invite`  | Invite collaborators                              |
+| Scope               | Meaning                             |
+| ------------------- | ----------------------------------- |
+| `collection:read`   | Browse/view albums                  |
+| `collection:create` | Create albums                       |
+| `collection:update` | Modify album membership or metadata |
+| `collection:delete` | Delete albums                       |
+| `collection:share`  | Share albums                        |
+| `collection:invite` | Invite collaborators and casuals    |
 
 
 ### Groups
@@ -74,6 +75,8 @@ Possible user actions assigned to each entity, or domain (e.g. "Media"):
 | `group:invite` | Invite members                       |
 
 ### Backups
+
+ *(deferred beyond V1)*
 
 | Scope            | Meaning             |
 | ---------------- | ------------------- |
@@ -96,7 +99,6 @@ media:
 collection:
   - read
   - create
-  - publish
   - update
   - delete
   - share
@@ -106,7 +108,7 @@ group:
   - update
   - delete
   - invite
-backup:
+backup: # deferred beyond V1
   - run
   - recover
 ```
@@ -125,7 +127,6 @@ media:
 collection:
   - read
   - create
-  - publish
   - update
   - delete
   - share
@@ -134,7 +135,9 @@ collection:
 
 ### Casual
 
-Casuals are Group members with a more passive level of participation. This role is suitable for people who are hesitant about, or uncomfortable with, having deletion permissions.
+*(deferred beyond V1)*
+
+Casuals are the passive participants of their Groups. This role provides read-only access to Collections and is suitable for people less comfortable navigating digital interfaces:
 
 ``` yaml
 media:
@@ -143,15 +146,15 @@ media:
 collection:
   - read
   - share
-  - invite
 ```
 
 ## Notes
 
-- A given user is limited only to the Groups, Collections, etc. they are granted access to
-- For the first iteration of this project, perhaps all users are Admins (and Contributors and Casuals are added later)
-- Consider use of inheritance (e.g. does an Admin always have administrative privileges over all Collections in their Group?)
+- A given user’s visibility is limited to the Groups, Collections, and related resources granted to them (i.e. an Admin does not have visibility of all Groups)
+- Contributor has been added to scope for V1 so that Admins don't have to upload all media themselves (i.e. the Upload Flow is separated from the Admin Flow: [High-level navigation](./ui-flow.md#1-high-level-navigation))
+- Consideration: use of inheritance (e.g. does an Admin always have administrative privileges over all Collections in their Group?)
 - Assumption: share links are not public (not by default, anyway)
 - Potential future feature: lightweight custom roles
 - Potential future feature: restrict downloads
-- Consider adding social-specific scopes, to allow Casuals to be able to edit/delete their own social interactions (e.g. comments, likes)
+- Potential future feature: allow Casuals to be able to edit/delete their own social interactions (e.g. comments, likes)
+- Potential future feature: allow Casuals to flag an image or video for deletion (along with a comment)
