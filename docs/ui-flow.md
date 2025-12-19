@@ -3,7 +3,20 @@
 This document describes the user flows for the first version of the Image Management System.  
 The goal is to keep the experience simple, clear and friendly for both admins and casual viewers.
 
-Version one focuses on browsing, simple search, uploading, batch tagging and a basic publish flow.
+Version one focuses on browsing, simple search, uploading, and batch tagging.
+
+---
+
+## Table of contents
+1. [High-level navigation](#1-high-level-navigation)
+2. [Home](#2-home)
+3. [Browse flow](#3-browse-flow)
+4. [Image detail flow](#4-image-detail-flow)
+5. [Upload flow](#5-upload-flow)
+6. [Batch tagging flow](#6-batch-tagging-flow)
+7. [Admin settings](#7-admin-settings)  
+
+V1 Notes [V1 Simplicity Notes](#v1-simplicity-notes)
 
 ---
 
@@ -14,9 +27,8 @@ flowchart TD
     Home[Home] --> Browse
     Home --> Admin
     Home --> Upload[Upload Flow]
-    Admin --> Settings[Admin Settings<br/>]
-    Admin --> Publish[Publish Locally<br/>]
-    Admin --> People[People & Roles<br/>]
+    Admin --> Roles[Roles<br/>]
+    Admin --> People[People<br/>]
 
     Browse --> Detail[Image Detail]
     Browse --> SearchBar[Keyword / Tag / Comment Search]
@@ -48,7 +60,7 @@ Light and simple.
 flowchart TD
     Browse[Browse Grid]
     Filters[Filter Bar<br/>tags, date, people, type, source]
-    Search[Search Bar<br/>tags + comments + text]
+    Search[Search Bar<br/>]
     Detail[Image Detail]
 
     Browse --> Filters
@@ -58,12 +70,14 @@ flowchart TD
 
 ### Notes
 - Original aspect ratio thumbnails  
-- Multi-select filters  
+
 - Search supports searching for search term in:  
   - tags  
   - comments  
   - all meta data text fields  
-- SHould also be able to search by date range 
+- Multi-select filters  
+- Multiple filters can be applied at once  
+- Clicking thumbnail opens Image Detail view 
 
 ---
 
@@ -83,7 +97,6 @@ flowchart TD
 
 ### Notes
 - Users can tag + comment  
-- Casuals browse only  
 - EXIF hidden behind toggle  
 
 ---
@@ -100,6 +113,9 @@ flowchart TD
     Upload --> Done[Complete]
 ```
 
+### Notes
+- Review to double check tags/comments before upload 
+
 ---
 
 ## 6. Batch tagging flow
@@ -110,35 +126,32 @@ flowchart TD
     Recent[Recently Used Tags]
     FreeText[Free Text Tag]
     Suggestions[Suggested From Existing]
-    Overrides[Per-image Overrides]
 
     BatchTag --> Recent
     BatchTag --> FreeText
     BatchTag --> Suggestions
-    BatchTag --> Overrides
 ```
+
+### Notes
+- Use list display of images to select images to tag
+- Show recently used tags for quick selection
+- Show suggested tags from existing tags in system
+- Allow free text entry for new tags  
 
 ---
 
-## 7. Publish locally
+## 7. Admin settings 
 
 ```mermaid
 flowchart TD
-    PublishStart[Publish Locally] --> ChooseScope[Choose Scope<br/>All or Collection]
-    ChooseScope --> Generate[Generate HTML + Thumbnails]
-    Generate --> Output[Output to Folder]
+    Admin[Admin Settings] --> People[People]
+    Admin --> Roles[Roles<br/>]
 ```
 
----
-
-## 8. Admin settings 
-
-```mermaid
-flowchart TD
-    Admin[Admin Settings] --> People[People & Roles]
-    Admin --> AccessLists[Access Collection Based Lists<br/>]
-    Admin --> Placeholder[Future Settings]
-```
+### Notes
+- invite people
+- assign to roles
+- manage roles and permissions
 
 ---
 
@@ -147,6 +160,6 @@ flowchart TD
 - No favourites  
 - No albums  
 - No moderation workflow  
-- Tags will encourage using an existing tag over creating a new one  
+- No publish to static HTML
+- When adding tags will encourage using an existing tag over creating a new one  
 - EXIF hidden  
-- Publish flow is single-step  

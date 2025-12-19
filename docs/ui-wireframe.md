@@ -29,7 +29,7 @@ See also: [UI Flows](./ui-flows.md).
     
     Welcome back
     
-    [ Browse Images ]      [ Publish Locally ] (admin only)
+    [ Browse Images ]      
     [ Upload Images ]    [ Admin Settings ] (admin only)
     
     Recent activity:
@@ -39,7 +39,7 @@ See also: [UI Flows](./ui-flows.md).
 
 - Collection dropdown defaults to **All**.
 - Search is simple keyword search (tags, comments, text).
-- Admin-only actions are not shown to casual users.
+- Admin-only actions are not shown to other users.
 
 ---
 
@@ -48,7 +48,7 @@ See also: [UI Flows](./ui-flows.md).
     +-------------------------------------------------------+
     | Collection: [ All ▼ ]   Search: [ tags/comments ]     |
     +-------------------------------------------------------+
-    | Filters: [Tags ▼] [People ▼] [Year ▼] [Type ▼] [Src ▼]|
+    | Filters: [Tags ▼] [People ▼] [Date ▼] [Type ▼] [Src ▼]|
     +-------------------------------------------------------+
     
     [   img   ] [   img   ] [   img   ] [   img   ]
@@ -58,7 +58,13 @@ See also: [UI Flows](./ui-flows.md).
 **Notes**
 
 - Thumbnails keep original aspect ratio.
-- Filters support tags, people, year, type and source.
+- Filters support 
+    - tags
+    - people
+    - date taken (drop to choose specific date or range)
+    - date added (drop to choose specific date or range)
+    - type (photo, video, scan, other)
+    - source (uploaded by attribution, import, other)
 - Clicking a thumbnail opens the Image detail view.
 
 ---
@@ -66,13 +72,13 @@ See also: [UI Flows](./ui-flows.md).
 ## Image detail
 
     +-------------------------------------------------------+
-    | < Back                      Collection: [ All ▼ ]     |
+    | < Back                      [ Image Name ]       |
     +-------------------------------------------------------+
     
                         [   LARGE IMAGE   ]
     
     Tags:
-    [pill] [pill] [pill]      [+ Add Tag]  (admin only)
+    [tag] [tag] [tag]      [+ Add Tag] 
     
     Comments:
     -----------------------------------------------
@@ -81,14 +87,13 @@ See also: [UI Flows](./ui-flows.md).
     | Another comment...                         |
     -----------------------------------------------
     
-    [ + Add Comment ]  (admin only)
+    [ + Add Comment ]  
     
     [ More details ▼ ]  (EXIF / advanced metadata)
 
 **Notes**
 
-- Admins can add tags and comments.
-- Casual users see tags and comments but no add controls.
+- Contributors can add tags and comments.
 - EXIF and advanced metadata are hidden behind “More details”.
 
 ---
@@ -115,8 +120,8 @@ See also: [UI Flows](./ui-flows.md).
 **Notes**
 
 - Supports drag-and-drop and file picker.
-- Large batches (200+) allowed.
-- Metadata extraction happens automatically after selection.
+- Large batches allowed
+- Metadata extraction happens automatically after selection
 
 ---
 
@@ -130,21 +135,22 @@ See also: [UI Flows](./ui-flows.md).
     
     Apply to all images in this batch:
     
-    Recently used:
-    [pill] [pill] [pill]
+    Recently used tags:
+    [tag] [tag] [tag]
     
     Suggested (from existing tags):
-    [pill] [pill]
+    [tag] [tag]
     
     Add new tag:
     [______________]  [ + Add ]
     
     ---------------------------------------------------------
-    Per-image overrides:
+    Select one or more to add tag to individual images:
     ---------------------------------------------------------
-    [ img ]  Tags: [pill] [x] [pill] [x]  [ + Add ]
-    [ img ]  Tags: [pill]      [ + Add ]
-    [ img ]  Tags:             [ + Add ]
+    [x] [ img ]  Tags: [tag]  [tag] 
+    [ ] [ img ]  Tags: [tag]     
+    [x] [ img ]  Tags: [tag]     
+    [x] [ img ]  Tags:             
     ---------------------------------------------------------
     
     [ Back ]
@@ -152,9 +158,8 @@ See also: [UI Flows](./ui-flows.md).
 
 **Notes**
 
-- Batch tags apply to all images by default.
-- Per-image overrides allow fine tuning.
-- Recently used tags help avoid typos and duplicates.
+- Use list style select to make it easy to see images and their current tags
+- Show recently used tags and similar tags help avoid typos and duplicates
 
 ## Review
 
@@ -166,40 +171,12 @@ See also: [UI Flows](./ui-flows.md).
     
     You are about to upload 50 images with the following tags:
     
-    [pill] [pill] [pill] ...
+    [tag] [tag] [tag] ...
     
     Confirm that everything looks good before proceeding.
     
     [ Back ]
     [ Confirm & Upload ]
----
-
-## Publish locally
-
-    +-------------------------------------------------------+
-    | Publish Locally                                       |
-    +-------------------------------------------------------+
-    
-    Choose scope:
-    
-    (•) All images
-    ( ) This collection: [ All ▼ ]
-    
-    [ Publish ]
-    
-    Status:
-    [✔] Generating thumbnails…
-    [✔] Building HTML bundle…
-    [✔] Writing files to folder…
-    
-    Output folder:
-    [ /path/to/exported-bundle ]
-
-**Notes**
-
-- Generates static HTML + thumbnails + JSON in a folder.
-- Simple, single-step flow with clear progress.
-
 ---
 
 ## Admin settings
@@ -208,31 +185,83 @@ See also: [UI Flows](./ui-flows.md).
     | Admin Settings                                        |
     +-------------------------------------------------------+
     
-    People & Roles
+    People 
     ---------------------------------------------------------
-    | Name        | Email               | Role    | Actions |
+    | Name        | Email               | Role        | Actions |
     ---------------------------------------------------------
-    | Alice       | ...                 | Admin   | [Edit]  |
-    | Bob         | ...                 | Viewer  | [Edit]  |
+    | Alice       | ...                 | Admin        | [Edit]  |
+    | Bob         | ...                 | Contributor  | [Edit]  |
     ---------------------------------------------------------
-    [ + Add person ]   (UI only in V1)
+    [ + Add person ]   
     
     Collection access lists
     ---------------------------------------------------------
     Collection: [ All ▼ ]
-    [ Person A ] [ Person B ] [ + Add person ]
     ---------------------------------------------------------
-    
-    Future settings
     ---------------------------------------------------------
-    (Placeholder for later options)
+    | Name            | Collection   | Actions |
+    ---------------------------------------------------------
+    | Alice           | Collection A | [Edit]  |
+    | Alice           | Collection B | [Edit]  |
+    | Alice           | Collection C | [Edit]  |
+    | Bob             | Collection A | [Edit]  |
+    | Bob             | Collection B | [Edit]  |
+    ---------------------------------------------------------
+    [ + Add person / collection pair ]  
+
+
+    Roles
+    ---------------------------------------------------------
+    | Role            | Actions |
+    ---------------------------------------------------------
+    | Admin           | `media:create` | [X]  |
+    | Admin           | `media:update` | [X]  |
+    | Admin           | `media:delete` | [X]  |
+    | Contributor     | `media:create` | [X]  |
+    | Contributor     | `media:update` | [X]  |
+    | Contributor     | `media:delete` | [-]  |
+    ---------------------------------------------------------
+
+  
+**Notes**
+- Only a subset of actions shown in Rules section for illustrative purposes (expect full list to be dislayed)
+- This could be read only for V1 (can populate via a seed script)
+
+
+    Tags
+    ---------------------------------------------------------
+    | Tag       | Usage Count |     | Actions |
+    ---------------------------------------------------------
+    | Tag A     10                  [Edit]
+    | Tag B     0                   [Edit]
+    | Tag C     23                  [Edit]
+    | Tag D     555                 [Edit]
+    | Tag E     11                  [Edit]
+    | Tag F     22                  [Edit]
+    ---------------------------------------------------------
+    [ + Add tag ]  
+
+**Notes**
+- Admin can add tags when setting up system
+- Admin can delete unused tags
+
+          
+    Images to be deleted
+    ---------------------------------------------------------
+    | Image       | Usage Count |     | Actions |
+    ---------------------------------------------------------
+    | Image A     1                   [Edit]
+    | Image B     0                   [Edit]
+    | Image C     2                   [Edit]
+    | Image D     5                   [Edit]
+    | Image E     1                   [Edit]
+    | Image F     2                   [Edit]
     ---------------------------------------------------------
 
 **Notes**
-
-- V1 is UI only (no backend wiring yet).
-- Designed to be simple for non-technical users.
-- Focus is on showing intent of roles and access, not full behaviour.
+- Admin can see images marked for deletion
+- Admin can permanently delete images
+- Usage count shows how many collections the image is in
 
 ---
 
