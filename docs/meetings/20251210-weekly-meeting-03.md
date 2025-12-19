@@ -84,11 +84,10 @@ Note: these were automatically generated from meeting discussion. Mostly these a
 - [x] Publish meeting notes from last time and today using AI transcript
 
 ### Laura
-- [ ] Update roles page to use "admin" and "casual" instead of "maintainer" and "observer"
-- [ ] Update roles page based on actions discussed
-- [ ] Do another pass on Leah's UI flow for feedback
-- [ ] Show Leah how to fix the mermaid diagram duplicate errors
-- [ ] Ask Fabs on Slack if she's comfortable sharing what she had shared with Leah last week
+- [x] Update roles page to use "admin" and "casual" instead of "maintainer" and "observer"
+- [x] Update roles page based on actions discussed
+- [x] Do another pass on Leah's UI flow for feedback
+- [x] Show Leah how to fix the mermaid diagram duplicate errors
 
 ### Iryna
 - [ ] Double check the squash thing in project conventions document
