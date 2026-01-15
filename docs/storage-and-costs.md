@@ -1,5 +1,22 @@
 # AWS S3 storage and access costs
 
+## TL;DR
+
+We store three versions of each photo optimized for different use cases:
+
+- **Thumbnails** (30KB) → S3 Standard - fast browsing, always hot
+- **Web-optimized** (300KB) → S3 Standard - full-screen viewing, instant access
+- **Originals** (15MB) → S3 Intelligent-Tiering - printing/downloading, auto-tiering based on access patterns
+- **Backup** (15MB) → S3 Glacier Deep Archive (Sydney) - disaster recovery only, 12-hour retrieval
+
+Users always get instant access to all photos. Glacier backups are never accessed during normal operations.
+
+**Estimated monthly costs:** Small (10GB) ~$0.83 | Medium (50GB) ~$3.83 | Large (250GB) ~$27.11
+
+**Suggested file formats:** JPEG for thumbnails and web-optimized versions (universal compatibility, simple V1 implementation). Originals stored in their native format (HEIC/JPEG/RAW).
+
+---
+
 _Note:_ The prices are correct at the time of writing this doc during the initial spike. The pricing region is Asia Pacific (Melbourne). The prices are in US dollars.
 
 The pricing page for up-to-date information: https://aws.amazon.com/s3/pricing/. Make sure to use the correct region(s).
@@ -41,14 +58,16 @@ Use [S3 Glacier](https://aws.amazon.com/s3/storage-classes/glacier/) Deep Archiv
 
 - Target audience includes users with legacy devices (e.g. iPhones with iOS 13 released before 2020)
 - Image sizes:
-  - Thumbnails: 30 KB average (10-50 KB) --> 300 px long side, WebP (best) / JPEG (legacy-compliant)
+  - Thumbnails: 30 KB average (10-50 KB) --> 300 px long side, JPEG (legacy-compliant) / WebP (best)
   - Web-optimised: 300 KB average (100-400 KB) --> 1920 px long side, JPEG (legacy) / WebP (better) / AVIF (best)
   - Originals: 15 MB average (modern phone photos 3-15 MB, professional cameras produce larger sizes) --> original size in px and format (HEIC / JPEG / RAW)
 - Upload pattern: Bulk upload initially, then 50-200 new photos/month
 - Viewing pattern: Recent photos viewed frequently, older photos rarely
-- Retrieval: Occasional bulk retrieval from Glacier (family events, making albums)
+- Retrieval:
+  - Normal downloads: originals retrieved instantly from S3 Intelligent-Tiering (printing, sharing, viewing)
+  - Glacier backup: only accessed for disaster recovery (data loss, corruption, regional failure)
+  - Expected Glacier retrievals: 0
 - No S3 Select: Image files don't benefit from query-in-place
-- Bulk retrievals only: 5-12 hour retrieval is acceptable for old photos (much cheaper than Standard/Expedited)
 
 ## Reasoning:
 
@@ -118,18 +137,6 @@ For each object that is stored in the S3 Glacier Flexible Retrieval and S3 Glaci
 - [Estimates for med archive (50 GB)](https://calculator.aws/#/estimate?id=cb554c6e1e51e02988512c83a5d327b0cdc221d3)
 - [Estimates for large archive (250 GB)](https://calculator.aws/#/estimate?id=2fb863ded74b113c7d69bee45d06628f1fbb28ab)
 - [Free tier offers 20K GET requests and 2K PUT requests](https://aws.amazon.com/free/storage/s3/)
-
-## Key Assumptions for Family Photo Archive
-
-1. Upload pattern: Bulk upload initially, then 50-200 new photos/month
-2. Viewing pattern: Recent photos viewed frequently, older photos rarely
-3. Retrieval: Occasional bulk retrieval from Glacier (family events, making albums)
-4. No S3 Select: Image files don't benefit from query-in-place
-5. File sizes:
-
-- Thumbnail (browsing grid, instant load): 150x150 px to 300x300 px, 5 KB to 30 KB -> S3 Standard
-- Web-optimised (full-screen, fast viewing): 1280 px to 1920 px longest side, 100 KB to 300 KB -> S3 Standard
-- Full-size (backup/archival, printing): e.g. 4000 x 6000 px (original camera resolution)
 
 ## S3 Structure
 
