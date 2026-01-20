@@ -10,14 +10,15 @@ See also: [UI Flows](./ui-flows.md).
 
 ## Table of contents
 
-1. [Home](#home)  
-2. [Browse grid](#browse-grid)  
-3. [Image detail](#image-detail)  
-4. [Upload](#upload)  
-5. [Batch tagging](#batch-tagging)  
-6. [Publish locally](#publish-locally)  
-7. [Admin settings](#admin-settings)  
-8. [V1 simplicity notes](#v1-simplicity-notes)
+- [Table of contents](#table-of-contents)
+- [Home](#home)
+- [Browse grid](#browse-grid)
+- [Image detail](#image-detail)
+- [Upload](#upload)
+- [Batch tagging](#batch-tagging)
+- [Review](#review)
+- [Admin settings](#admin-settings)
+- [V1 simplicity notes](#v1-simplicity-notes)
 
 ---
 
@@ -222,12 +223,13 @@ See also: [UI Flows](./ui-flows.md).
     | Contributor     | `media:delete` | [-]  |
     ---------------------------------------------------------
 
-  
 **Notes**
-- Only a subset of actions shown in Rules section for illustrative purposes (expect full list to be dislayed)
+
+- Only a subset of actions shown in Roles section for illustrative purposes (expect full list to be dislayed)
 - This could be read only for V1 (can populate via a seed script)
+<p></p> <!-- empty paragraph tag to "exit" the bullet list and fix rendering of the 'Tags' code block below -->
 
-
+<!-- Admin settings cont. -->
     Tags
     ---------------------------------------------------------
     | Tag       | Usage Count |     | Actions |
@@ -241,11 +243,15 @@ See also: [UI Flows](./ui-flows.md).
     ---------------------------------------------------------
     [ + Add tag ]  
 
+    
 **Notes**
+
 - Admin can add tags when setting up system
 - Admin can delete unused tags
+<p></p> <!-- rendering fix -->
 
-          
+<!-- Admin settings cont. -->
+
     Images to be deleted
     ---------------------------------------------------------
     | Image       | Usage Count |     | Actions |
@@ -275,6 +281,6 @@ Version one is deliberately minimal:
 - Tags and comments are admin-only actions.  
 - EXIF and advanced metadata are hidden by default.  
 - Access management is UI only.  
-- Publish flow is a single, simple step.
+- No "publish locally" flow.
 
 Future versions can build on this without breaking the mental model for early users.
