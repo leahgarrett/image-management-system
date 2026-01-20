@@ -66,4 +66,14 @@ To efficiently handle large file uploads, we propose a separate ingestion servic
 
 ## Core
 
+The backend uses **Express** as the Node.js framework for its mature ecosystem and simplicity, paired with **Mongoose** for MongoDB access providing schema validation and intuitive querying. 
+
+Authentication implements **JWT tokens with magic link email verification** for passwordless, secure user onboarding. 
+
+The database schema follows a document-based design with collections for images (metadata, S3 references, EXIF), users (roles, permissions), tags (hierarchical, reusable), and comments (threaded, with moderation status). 
+
+The REST API follows consistent patterns with `/api/v1` versioning, standardized error responses (RFC 7807), and centralized error handling middleware.
+
+For detailed technical decisions, alternatives considered, and implementation examples, see [Backend Architecture Details](backend-architecture.md).
+
 ## Frontend
