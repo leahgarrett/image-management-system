@@ -48,21 +48,25 @@ _Note:_ This document outlines the technical decisions for the Node.js backend, 
 
 **Decision:** Mongoose's schema validation and middleware capabilities align well with our need for data consistency and business logic hooks (e.g., thumbnail generation triggers).
 
+s3Key will be in the ENVironment variables.
+
 **Example Schema:**
 ```javascript
 const imageSchema = new mongoose.Schema({
   imageId: { type: String, required: true, unique: true, index: true },
   originalFilename: String,
-  s3Key: { type: String, required: true },
   thumbnailKey: String,
   webOptimizedKey: String,
-  fileSize: Number,
-  dimensions: { width: Number, height: Number },
-  mimeType: String,
+  originalKey: String,
+  thumbnailFileSize: Number,
+  webOptimizedFileSize: Number,
+  originalFileSize: Number,
+  originalDimensions: { width: Number, height: Number },
   uploadedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   uploadedAt: { type: Date, default: Date.now },
+  collections: [{ type: String, index: true }],
   tags: [{ type: String, index: true }],
-  people: [{ name: String }],
+  people: [{ name: String, index: true }],
   dateRange: {
     type: { type: String, enum: ['exact', 'range', 'approximate'] },
     exactDate: Date,
@@ -90,7 +94,7 @@ const imageSchema = new mongoose.Schema({
 
 #### Images
 - Stores metadata, S3 references, EXIF data, tagging information
-- Indexed on: `imageId`, `uploadedBy`, `tags`, `uploadedAt`, `published`
+- Indexed on: `imageId`, `uploadedBy`, `tags`, `people`, `uploadedAt`, `published`
 - Uses embedded documents for dateRange and occasion (no separate collections needed)
 
 #### Users
@@ -99,7 +103,8 @@ const imageSchema = new mongoose.Schema({
   _id: ObjectId,
   email: String (unique, indexed),
   name: String,
-  role: String (enum: ['admin', 'editor', 'viewer']),
+  role: String (enum: ['admin', 'contributor']),
+  collections: [{ type: String }],
   permissions: [String],
   createdAt: Date,
   lastLoginAt: Date,
@@ -113,7 +118,6 @@ const imageSchema = new mongoose.Schema({
 {
   _id: ObjectId,
   name: String (unique, indexed),
-  category: String,
   usageCount: Number,
   createdAt: Date,
   createdBy: ObjectId (ref: User)
@@ -167,7 +171,7 @@ const imageSchema = new mongoose.Schema({
 {
   userId: "507f1f77bcf86cd799439011",
   email: "user@example.com",
-  role: "editor",
+  role: "contributor",
   permissions: ["images.view", "images.upload", "images.tag"],
   iat: 1642546800,
   exp: 1642633200  // 24 hour expiry
