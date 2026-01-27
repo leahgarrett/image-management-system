@@ -66,4 +66,18 @@ To efficiently handle large file uploads, we propose a separate ingestion servic
 
 ## Core
 
+The backend uses **Express** as the Node.js framework for its mature ecosystem and simplicity, paired with **Mongoose** for MongoDB access providing schema validation and intuitive querying. 
+
+Authentication implements **JWT tokens with magic link email verification** for passwordless, secure user onboarding. 
+
+The database schema follows a document-based design with collections for images (metadata, S3 references, EXIF), users (roles, permissions), tags (hierarchical, reusable), and comments (threaded, with moderation status). 
+
+The REST API follows consistent patterns with `/api/v1` versioning, standardized error responses (RFC 7807), and centralized error handling middleware.
+
+For detailed technical decisions, alternatives considered, and implementation examples, see [Backend Architecture Details](backend-architecture.md).
+
 ## Frontend
+
+The frontend uses **Vite** as the build tool for instant HMR and optimized production builds, with **React 18** and **TypeScript** for type-safe component development. **Tailwind CSS** provides utility-first styling for rapid UI development with consistent design tokens, while **Zustand** handles lightweight global state management for auth, filters, and upload queue. Image optimization leverages `react-lazy-load-image-component` for viewport-based lazy loading and `react-window` for virtualized grid scrolling of large image collections. Form handling uses **React Hook Form** with Zod validation for the upload workflow, batch tagging interface, and multi-file drag-and-drop powered by `react-dropzone`, ensuring efficient re-renders and seamless UX for organizing family photo collections.
+
+For detailed technical decisions, alternatives considered, and implementation examples, see [Frontend Architecture Details](frontend-architecture.md).
