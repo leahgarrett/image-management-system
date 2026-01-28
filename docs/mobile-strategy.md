@@ -597,3 +597,534 @@ export const uploadSchema = z.object({
    - Plan migration if justified by data
 
 **Conclusion:** PWA provides the optimal balance of functionality, cost, and time-to-market for V1. React Native remains a viable option for V2 if user needs justify the investment.
+
+---
+
+## Testing Strategy for Mobile
+
+### PWA Testing Approach
+
+#### 1. Mobile Browser Testing
+
+**Test Matrix:**
+| Device | Browser | Priority |
+|--------|---------|----------|
+| iPhone (iOS 16+) | Safari | High |
+| iPhone (iOS 15) | Safari | Medium |
+| Android (latest) | Chrome | High |
+| Android (latest) | Firefox | Low |
+| iPad | Safari | Medium |
+
+**Key Test Scenarios:**
+- PWA installation flow
+- Camera/photo library access
+- Offline functionality
+- Touch gestures (swipe, pinch, long-press)
+- Service worker caching
+- IndexedDB storage limits
+- Push notifications (where supported)
+
+#### 2. Playwright Mobile Testing
+
+**Mobile Configuration:**
+```typescript
+// playwright.config.ts
+export default defineConfig({
+  projects: [
+    {
+      name: 'Mobile Chrome',
+      use: {
+        ...devices['Pixel 5'],
+        viewport: { width: 393, height: 851 },
+        hasTouch: true,
+        isMobile: true,
+      },
+    },
+    {
+      name: 'Mobile Safari',
+      use: {
+        ...devices['iPhone 13'],
+        viewport: { width: 390, height: 844 },
+        hasTouch: true,
+        isMobile: true,
+      },
+    },
+  ],
+})
+```
+
+**Mobile-Specific E2E Tests:**
+```typescript
+// e2e/mobile-upload.spec.ts
+import { test, expect } from '@playwright/test'
+
+test.describe('Mobile Upload Flow', () => {
+  test.use({ ...devices['iPhone 13'] })
+
+  test('uploads photo from camera', async ({ page }) => {
+    await page.goto('/upload')
+    
+    // Intercept file input (camera)
+    const fileInput = page.locator('input[type="file"][capture="environment"]')
+    await fileInput.setInputFiles('fixtures/test-photo.jpg')
+    
+    await expect(page.getByText('1 photo ready')).toBeVisible()
+    
+    // Test touch interactions
+    await page.tap('[data-testid="tag-input"]')
+    await page.fill('[data-testid="tag-input"]', 'vacation')
+    await page.tap('[data-testid="add-tag-button"]')
+    
+    await page.tap('[data-testid="upload-button"]')
+    await expect(page.getByText('Upload complete')).toBeVisible({ timeout: 10000 })
+  })
+
+  test('works offline', async ({ page, context }) => {
+    await page.goto('/')
+    await page.waitForLoadState('networkidle')
+    
+    // Go offline
+    await context.setOffline(true)
+    
+    // Should still show cached images
+    await expect(page.locator('[data-testid="image-card"]').first()).toBeVisible()
+    
+    // Upload should queue
+    await page.goto('/upload')
+    const fileInput = page.locator('input[type="file"]')
+    await fileInput.setInputFiles('fixtures/test-photo.jpg')
+    
+    await page.tap('[data-testid="upload-button"]')
+    await expect(page.getByText(/will upload when online/i)).toBeVisible()
+  })
+
+  test('responsive layout on mobile', async ({ page }) => {
+    await page.goto('/')
+    
+    // Check mobile menu
+    await expect(page.locator('[data-testid="mobile-menu"]')).toBeVisible()
+    await expect(page.locator('[data-testid="desktop-menu"]')).not.toBeVisible()
+    
+    // Check image grid adapts
+    const grid = page.locator('[data-testid="image-grid"]')
+    const boundingBox = await grid.boundingBox()
+    expect(boundingBox?.width).toBeLessThan(400)
+  })
+})
+```
+
+#### 3. Real Device Testing
+
+**Using BrowserStack or Sauce Labs:**
+```typescript
+// playwright.config.ts (BrowserStack integration)
+import { defineConfig } from '@playwright/test'
+
+export default defineConfig({
+  use: {
+    connectOptions: {
+      wsEndpoint: `wss://cdp.browserstack.com/playwright?caps=${encodeURIComponent(JSON.stringify({
+        'browser': 'chrome',
+        'os': 'android',
+        'os_version': '13.0',
+        'browserstack.username': process.env.BROWSERSTACK_USERNAME,
+        'browserstack.accessKey': process.env.BROWSERSTACK_ACCESS_KEY,
+      }))}`,
+    },
+  },
+})
+```
+
+**Manual Testing Checklist:**
+```markdown
+# Mobile PWA Testing Checklist
+
+## Installation
+- [ ] "Add to Home Screen" prompt appears
+- [ ] App icon displays correctly
+- [ ] Splash screen shows on launch
+- [ ] App opens in fullscreen mode
+
+## Camera/Upload
+- [ ] Camera permission requested
+- [ ] Camera opens and captures photo
+- [ ] Photo library accessible
+- [ ] Multi-select works
+- [ ] Preview images load
+
+## Offline
+- [ ] Service worker registers
+- [ ] Cached images display offline
+- [ ] Upload queue works offline
+- [ ] Syncs when back online
+- [ ] "Offline" indicator shows
+
+## Performance
+- [ ] Images lazy load smoothly
+- [ ] Scrolling is smooth (60fps)
+- [ ] Touch gestures responsive
+- [ ] No layout shift on load
+
+## Accessibility
+- [ ] Touch targets ≥44x44px
+- [ ] Zoom works properly
+- [ ] Screen reader navigation
+- [ ] Color contrast sufficient
+```
+
+### React Native Testing (if adopted in V2)
+
+#### 1. Jest + React Native Testing Library
+
+**Configuration:**
+```javascript
+// jest.config.js
+module.exports = {
+  preset: 'react-native',
+  setupFilesAfterEnv: ['@testing-library/jest-native/extend-expect'],
+  transformIgnorePatterns: [
+    'node_modules/(?!(react-native|@react-native|expo|@expo)/)',
+  ],
+  collectCoverageFrom: [
+    'src/**/*.{ts,tsx}',
+    '!src/**/*.stories.tsx',
+    '!src/**/*.test.tsx',
+  ],
+}
+```
+
+**Example Test:**
+```typescript
+// components/MobileImageGrid.test.tsx
+import { render, screen } from '@testing-library/react-native'
+import { MobileImageGrid } from './MobileImageGrid'
+
+describe('MobileImageGrid', () => {
+  it('renders image thumbnails', () => {
+    const images = [
+      { id: '1', thumbnailUrl: 'https://example.com/1.jpg' },
+      { id: '2', thumbnailUrl: 'https://example.com/2.jpg' },
+    ]
+    
+    render(<MobileImageGrid images={images} />)
+    
+    expect(screen.getByTestId('image-grid')).toBeTruthy()
+    expect(screen.getAllByTestId('image-thumbnail')).toHaveLength(2)
+  })
+})
+```
+
+#### 2. Detox (E2E for React Native)
+
+**Configuration:**
+```json
+// .detoxrc.js
+module.exports = {
+  testRunner: {
+    args: {
+      config: 'e2e/jest.config.js',
+    },
+    jest: {
+      setupTimeout: 120000,
+    },
+  },
+  apps: {
+    'ios.release': {
+      type: 'ios.app',
+      binaryPath: 'ios/build/Build/Products/Release-iphonesimulator/PhotoManager.app',
+      build: 'xcodebuild -workspace ios/PhotoManager.xcworkspace -scheme PhotoManager -configuration Release -sdk iphonesimulator -derivedDataPath ios/build',
+    },
+    'android.release': {
+      type: 'android.apk',
+      binaryPath: 'android/app/build/outputs/apk/release/app-release.apk',
+      build: 'cd android && ./gradlew assembleRelease assembleAndroidTest -DtestBuildType=release',
+    },
+  },
+  devices: {
+    simulator: {
+      type: 'ios.simulator',
+      device: { type: 'iPhone 14' },
+    },
+    emulator: {
+      type: 'android.emulator',
+      device: { avdName: 'Pixel_5_API_31' },
+    },
+  },
+}
+```
+
+**Example Detox Test:**
+```typescript
+// e2e/upload.e2e.ts
+import { device, element, by, expect as detoxExpect } from 'detox'
+
+describe('Upload Flow', () => {
+  beforeAll(async () => {
+    await device.launchApp()
+  })
+
+  it('should upload photo from camera', async () => {
+    await element(by.id('upload-tab')).tap()
+    await element(by.id('camera-button')).tap()
+    
+    // Grant camera permission if needed
+    await device.takeScreenshot('camera-permission')
+    
+    // Simulate photo capture (requires mock)
+    await element(by.id('capture-button')).tap()
+    
+    // Add tags
+    await element(by.id('tag-input')).typeText('vacation')
+    await element(by.id('add-tag-button')).tap()
+    
+    // Upload
+    await element(by.id('upload-button')).tap()
+    
+    await detoxExpect(element(by.text('Upload complete'))).toBeVisible()
+  })
+})
+```
+
+### Mobile Testing Best Practices
+
+#### 1. Test on Real Devices
+
+**Why:**
+- Emulators don't accurately simulate:
+  - Touch responsiveness
+  - Camera quality
+  - Battery usage
+  - Network conditions
+  - Performance constraints
+
+**Minimum Device Coverage:**
+- 1x iPhone (latest iOS)
+- 1x iPhone (iOS - 1 version)
+- 1x Android (flagship, latest)
+- 1x Android (mid-range, 2 years old)
+
+#### 2. Network Condition Testing
+
+```typescript
+// Playwright network throttling
+test('handles slow network', async ({ page, context }) => {
+  // Simulate 3G
+  await context.route('**/*', route => {
+    setTimeout(() => route.continue(), 500) // 500ms delay
+  })
+  
+  await page.goto('/')
+  
+  // Should show loading states
+  await expect(page.getByTestId('skeleton-loader')).toBeVisible()
+})
+
+test('handles offline gracefully', async ({ page, context }) => {
+  await page.goto('/')
+  await page.waitForLoadState('networkidle')
+  
+  await context.setOffline(true)
+  
+  // Try to upload
+  await page.goto('/upload')
+  await expect(page.getByText(/offline/i)).toBeVisible()
+})
+```
+
+#### 3. Touch Gesture Testing
+
+```typescript
+// Test swipe gestures
+test('swipes to delete image', async ({ page }) => {
+  await page.goto('/gallery')
+  
+  const imageCard = page.locator('[data-testid="image-card"]').first()
+  const box = await imageCard.boundingBox()
+  
+  // Swipe left
+  await page.touchscreen.tap(box.x + box.width / 2, box.y + box.height / 2)
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
+  await page.mouse.down()
+  await page.mouse.move(box.x - 100, box.y + box.height / 2)
+  await page.mouse.up()
+  
+  await expect(page.getByRole('button', { name: 'Delete' })).toBeVisible()
+})
+```
+
+### Maintainability for Mobile
+
+#### 1. Feature Flags
+
+```typescript
+// utils/features.ts
+export const features = {
+  pwaInstallPrompt: true,
+  offlineMode: true,
+  cameraUpload: true,
+  pushNotifications: false, // Not ready yet
+}
+
+// Usage in component
+if (features.pwaInstallPrompt) {
+  return <InstallPrompt />
+}
+```
+
+#### 2. Platform Detection
+
+```typescript
+// utils/platform.ts
+export const isMobile = () => {
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+    navigator.userAgent
+  )
+}
+
+export const isIOS = () => {
+  return /iPhone|iPad|iPod/i.test(navigator.userAgent)
+}
+
+export const isAndroid = () => {
+  return /Android/i.test(navigator.userAgent)
+}
+
+export const isPWA = () => {
+  return window.matchMedia('(display-mode: standalone)').matches
+}
+
+// Usage
+if (isIOS() && !isPWA()) {
+  return <IOSInstallInstructions />
+}
+```
+
+#### 3. Responsive Testing Utilities
+
+```typescript
+// test/utils/responsive.tsx
+import { render } from '@testing-library/react'
+
+export const renderMobile = (ui: React.ReactElement) => {
+  // Mock mobile viewport
+  Object.defineProperty(window, 'innerWidth', { value: 375 })
+  Object.defineProperty(window, 'innerHeight', { value: 667 })
+  
+  window.matchMedia = vi.fn().mockImplementation((query) => ({
+    matches: query.includes('max-width: 768px'),
+    media: query,
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+  }))
+  
+  return render(ui)
+}
+
+// Usage in tests
+it('renders mobile layout', () => {
+  renderMobile(<ImageGrid />)
+  expect(screen.getByTestId('mobile-grid')).toBeInTheDocument()
+})
+```
+
+#### 4. PWA Testing Utilities
+
+```typescript
+// test/utils/pwa.ts
+export const mockServiceWorker = () => {
+  global.navigator.serviceWorker = {
+    register: vi.fn().mockResolvedValue({
+      active: { postMessage: vi.fn() },
+    }),
+    ready: Promise.resolve({
+      active: { postMessage: vi.fn() },
+    }),
+  } as any
+}
+
+export const mockBeforeInstallPrompt = () => {
+  const prompt = vi.fn()
+  const event = {
+    preventDefault: vi.fn(),
+    prompt,
+    userChoice: Promise.resolve({ outcome: 'accepted' }),
+  }
+  
+  window.dispatchEvent(new Event('beforeinstallprompt'))
+  return event
+}
+```
+
+### Mobile CI/CD Pipeline
+
+```yaml
+# .github/workflows/mobile-test.yml
+name: Mobile Tests
+
+on: [push, pull_request]
+
+jobs:
+  pwa-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Run unit tests
+        run: npm run test:coverage
+      
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps
+      
+      - name: Run Playwright mobile tests
+        run: npm run test:e2e -- --project="Mobile Chrome" --project="Mobile Safari"
+      
+      - name: Upload test results
+        if: failure()
+        uses: actions/upload-artifact@v3
+        with:
+          name: playwright-report
+          path: playwright-report/
+  
+  browserstack-test:
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+      
+      - name: Test on real iOS devices
+        env:
+          BROWSERSTACK_USERNAME: ${{ secrets.BROWSERSTACK_USERNAME }}
+          BROWSERSTACK_ACCESS_KEY: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
+        run: npm run test:browserstack
+```
+
+---
+
+## Summary: Testing Recommendations
+
+### For PWA (V1):
+1. **Vitest** for unit/integration tests (fast, Vite-native)
+2. **React Testing Library** for component tests (user-centric)
+3. **Playwright** for E2E with mobile device emulation
+4. **Storybook** for component development and visual testing
+5. **Manual testing** on 2-3 real devices (iPhone + Android)
+6. **BrowserStack** for broader device coverage (optional, V1.5+)
+
+### For React Native (V2 if needed):
+1. **Jest** + **React Native Testing Library** for components
+2. **Detox** for E2E on iOS/Android simulators
+3. **Physical device testing** before releases
+4. **TestFlight** (iOS) and **Firebase App Distribution** (Android) for beta testing
+
+### Team Efficiency:
+- ✅ **Single test framework family** (Vitest/Jest share syntax)
+- ✅ **Minimal configuration** (Vite integration just works)
+- ✅ **Fast feedback** (instant test reruns)
+- ✅ **Shared knowledge** (same patterns for web and potential native)
+
+**Total testing setup time:** 2-3 days for PWA, additional 1-2 weeks for comprehensive E2E suite.
