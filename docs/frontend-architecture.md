@@ -1633,6 +1633,872 @@ server: {
 
 ---
 
+## Testing Strategy
+
+### Overview
+
+A comprehensive testing strategy ensures code quality and maintainability for a small team. The approach prioritizes **ease of use, fast feedback, and minimal configuration** over exhaustive coverage, focusing on testing user-facing behavior rather than implementation details.
+
+### Recommended Test Stack
+
+#### 1. Vitest (Unit & Integration Tests)
+
+**Why Vitest over Jest:**
+- **Native Vite integration:** Zero additional configuration
+- **Faster execution:** 2-10x faster than Jest
+- **ESM support:** Works with ES modules out of the box
+- **Compatible API:** Drop-in replacement for Jest (same syntax)
+- **TypeScript:** First-class TypeScript support
+- **Watch mode:** Instant re-runs on file changes
+
+**Installation:**
+```bash
+npm install -D vitest @vitest/ui @testing-library/react @testing-library/jest-dom @testing-library/user-event jsdom
+```
+
+**Configuration:**
+```typescript
+// vitest.config.ts
+import { defineConfig } from 'vitest/config'
+import react from '@vitejs/plugin-react'
+import path from 'path'
+
+export default defineConfig({
+  plugins: [react()],
+  test: {
+    globals: true,
+    environment: 'jsdom',
+    setupFiles: './src/test/setup.ts',
+    css: true,
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'json', 'html'],
+      exclude: [
+        'node_modules/',
+        'src/test/',
+        '**/*.d.ts',
+        '**/*.config.*',
+        '**/mockData',
+      ],
+    },
+  },
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, './src'),
+    },
+  },
+})
+```
+
+**Test Setup:**
+```typescript
+// src/test/setup.ts
+import { expect, afterEach } from 'vitest'
+import { cleanup } from '@testing-library/react'
+import * as matchers from '@testing-library/jest-dom/matchers'
+
+expect.extend(matchers)
+
+// Cleanup after each test
+afterEach(() => {
+  cleanup()
+})
+
+// Mock IntersectionObserver
+global.IntersectionObserver = class IntersectionObserver {
+  constructor() {}
+  disconnect() {}
+  observe() {}
+  unobserve() {}
+  takeRecords() {
+    return []
+  }
+}
+```
+
+**Documentation:** https://vitest.dev/
+
+#### 2. React Testing Library (Component Tests)
+
+**Philosophy:** Test components the way users interact with them, not implementation details.
+
+**Example Component Test:**
+```typescript
+// components/ImageCard.test.tsx
+import { describe, it, expect, vi } from 'vitest'
+import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { ImageCard } from './ImageCard'
+
+describe('ImageCard', () => {
+  const defaultProps = {
+    imageId: 'img_123',
+    thumbnailUrl: 'https://example.com/thumb.jpg',
+    alt: 'Family vacation photo',
+    tags: ['vacation', 'beach', '2024'],
+    onSelect: vi.fn(),
+    selected: false,
+  }
+
+  it('renders image with correct alt text', () => {
+    render(<ImageCard {...defaultProps} />)
+    
+    const image = screen.getByAltText('Family vacation photo')
+    expect(image).toBeInTheDocument()
+  })
+
+  it('shows tags on hover', async () => {
+    const user = userEvent.setup()
+    render(<ImageCard {...defaultProps} />)
+    
+    const card = screen.getByRole('button')
+    await user.hover(card)
+    
+    expect(screen.getByText('vacation')).toBeVisible()
+    expect(screen.getByText('beach')).toBeVisible()
+  })
+
+  it('calls onSelect when clicked', async () => {
+    const user = userEvent.setup()
+    const onSelect = vi.fn()
+    
+    render(<ImageCard {...defaultProps} onSelect={onSelect} />)
+    
+    await user.click(screen.getByRole('button'))
+    expect(onSelect).toHaveBeenCalledWith('img_123')
+  })
+
+  it('shows selected state with checkmark', () => {
+    render(<ImageCard {...defaultProps} selected={true} />)
+    
+    const checkmark = screen.getByRole('img', { hidden: true })
+    expect(checkmark).toBeInTheDocument()
+  })
+})
+```
+
+**Documentation:** https://testing-library.com/react
+
+#### 3. Playwright (E2E Tests)
+
+**Why Playwright over Cypress:**
+- **Better performance:** Faster test execution
+- **Multiple browsers:** Chrome, Firefox, Safari, Edge
+- **True multi-tab support:** Test workflows across tabs
+- **Network interception:** Built-in API mocking
+- **TypeScript-first:** Excellent TypeScript support
+- **Less flakiness:** Auto-waits for elements
+
+**Installation:**
+```bash
+npm install -D @playwright/test
+npx playwright install
+```
+
+**Configuration:**
+```typescript
+// playwright.config.ts
+import { defineConfig, devices } from '@playwright/test'
+
+export default defineConfig({
+  testDir: './e2e',
+  fullyParallel: true,
+  forbidOnly: !!process.env.CI,
+  retries: process.env.CI ? 2 : 0,
+  workers: process.env.CI ? 1 : undefined,
+  reporter: 'html',
+  
+  use: {
+    baseURL: 'http://localhost:3000',
+    trace: 'on-first-retry',
+    screenshot: 'only-on-failure',
+  },
+
+  projects: [
+    {
+      name: 'chromium',
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
+      name: 'Mobile Chrome',
+      use: { ...devices['Pixel 5'] },
+    },
+  ],
+
+  webServer: {
+    command: 'npm run dev',
+    url: 'http://localhost:3000',
+    reuseExistingServer: !process.env.CI,
+  },
+})
+```
+
+**Example E2E Test:**
+```typescript
+// e2e/upload-flow.spec.ts
+import { test, expect } from '@playwright/test'
+import path from 'path'
+
+test.describe('Upload Flow', () => {
+  test('user can upload and tag images', async ({ page }) => {
+    await page.goto('/')
+    
+    // Login
+    await page.getByRole('button', { name: 'Login' }).click()
+    await page.getByPlaceholder('Email').fill('user@example.com')
+    await page.getByRole('button', { name: 'Send Magic Link' }).click()
+    
+    // Navigate to upload
+    await page.getByRole('link', { name: 'Upload' }).click()
+    
+    // Upload files
+    const fileInput = page.locator('input[type="file"]')
+    await fileInput.setInputFiles([
+      path.join(__dirname, 'fixtures/test-image-1.jpg'),
+      path.join(__dirname, 'fixtures/test-image-2.jpg'),
+    ])
+    
+    // Wait for previews to load
+    await expect(page.getByText('2 photos')).toBeVisible()
+    
+    // Add tags
+    await page.getByPlaceholder('Type and press Enter').fill('vacation')
+    await page.keyboard.press('Enter')
+    await page.getByPlaceholder('Type and press Enter').fill('beach')
+    await page.keyboard.press('Enter')
+    
+    // Select occasion
+    await page.selectOption('select[name="occasion"]', 'vacation')
+    
+    // Submit
+    await page.getByRole('button', { name: 'Apply Tags & Upload' }).click()
+    
+    // Verify success
+    await expect(page.getByText('Upload complete')).toBeVisible({ timeout: 10000 })
+  })
+
+  test('shows offline indicator when disconnected', async ({ page, context }) => {
+    await page.goto('/')
+    
+    // Simulate offline
+    await context.setOffline(true)
+    
+    await expect(page.getByText(/you're offline/i)).toBeVisible()
+    
+    // Go back online
+    await context.setOffline(false)
+    await expect(page.getByText(/you're offline/i)).not.toBeVisible()
+  })
+})
+```
+
+**Documentation:** https://playwright.dev/
+
+#### 4. Storybook (Component Development & Visual Testing)
+
+**Why Storybook:**
+- **Component isolation:** Develop components in isolation
+- **Living documentation:** Auto-generates component docs
+- **Visual regression:** Catch UI bugs with snapshots
+- **Accessibility testing:** Built-in a11y addon
+- **Mobile testing:** Test responsive designs
+- **Design handoff:** Share components with designers
+
+**Installation:**
+```bash
+npx storybook@latest init
+npm install -D @storybook/addon-a11y @storybook/addon-interactions
+```
+
+**Configuration:**
+```typescript
+// .storybook/main.ts
+import type { StorybookConfig } from '@storybook/react-vite'
+
+const config: StorybookConfig = {
+  stories: ['../src/**/*.mdx', '../src/**/*.stories.@(js|jsx|ts|tsx)'],
+  addons: [
+    '@storybook/addon-links',
+    '@storybook/addon-essentials',
+    '@storybook/addon-interactions',
+    '@storybook/addon-a11y',
+  ],
+  framework: {
+    name: '@storybook/react-vite',
+    options: {},
+  },
+  docs: {
+    autodocs: 'tag',
+  },
+}
+
+export default config
+```
+
+**Example Story:**
+```typescript
+// components/ImageCard.stories.tsx
+import type { Meta, StoryObj } from '@storybook/react'
+import { fn } from '@storybook/test'
+import { ImageCard } from './ImageCard'
+
+const meta = {
+  title: 'Components/ImageCard',
+  component: ImageCard,
+  parameters: {
+    layout: 'centered',
+  },
+  tags: ['autodocs'],
+  args: {
+    onSelect: fn(),
+  },
+} satisfies Meta<typeof ImageCard>
+
+export default meta
+type Story = StoryObj<typeof meta>
+
+export const Default: Story = {
+  args: {
+    imageId: 'img_123',
+    thumbnailUrl: 'https://picsum.photos/300/200',
+    alt: 'Sample image',
+    tags: ['vacation', 'beach'],
+    selected: false,
+  },
+}
+
+export const Selected: Story = {
+  args: {
+    ...Default.args,
+    selected: true,
+  },
+}
+
+export const WithManyTags: Story = {
+  args: {
+    ...Default.args,
+    tags: ['vacation', 'beach', 'summer', '2024', 'family', 'sunset'],
+  },
+}
+
+export const Mobile: Story = {
+  args: Default.args,
+  parameters: {
+    viewport: {
+      defaultViewport: 'mobile1',
+    },
+  },
+}
+```
+
+**Visual Regression Testing:**
+```typescript
+// stories/ImageCard.test.ts
+import { test, expect } from '@storybook/test'
+
+test('ImageCard renders correctly', async ({ canvasElement }) => {
+  const canvas = within(canvasElement)
+  
+  await expect(canvas.getByAltText('Sample image')).toBeInTheDocument()
+  await expect(canvas.getByText('vacation')).toBeInTheDocument()
+})
+```
+
+**Documentation:** https://storybook.js.org/
+
+### Testing Pyramid Strategy
+
+```
+        /\
+       /  \    E2E (Playwright)
+      /    \   5-10 critical user flows
+     /------\  
+    /        \ Integration (Vitest + RTL)
+   /          \ 20-30 component interactions
+  /------------\
+ /              \ Unit (Vitest)
+/________________\ 50-100 business logic, utils, hooks
+```
+
+**Coverage Targets:**
+- Unit Tests: 80%+ coverage
+- Integration Tests: Key user workflows
+- E2E Tests: Critical paths only (login, upload, browse)
+
+### Testing Best Practices for Small Teams
+
+#### 1. Test User Behavior, Not Implementation
+
+**❌ Bad (Testing Implementation):**
+```typescript
+it('increments counter state', () => {
+  const { result } = renderHook(() => useState(0))
+  act(() => result.current[1](result.current[0] + 1))
+  expect(result.current[0]).toBe(1)
+})
+```
+
+**✅ Good (Testing Behavior):**
+```typescript
+it('increments counter when button clicked', async () => {
+  const user = userEvent.setup()
+  render(<Counter />)
+  
+  await user.click(screen.getByRole('button', { name: 'Increment' }))
+  expect(screen.getByText('Count: 1')).toBeInTheDocument()
+})
+```
+
+#### 2. Use Testing Library Queries in Priority Order
+
+1. **getByRole** - Most accessible and resilient
+2. **getByLabelText** - Forms and inputs
+3. **getByPlaceholderText** - Last resort for inputs
+4. **getByText** - User-visible text
+5. **getByTestId** - Only when nothing else works
+
+#### 3. Mock External Dependencies
+
+```typescript
+// utils/api.test.ts
+import { vi } from 'vitest'
+import { fetchImages } from './api'
+
+// Mock fetch globally
+global.fetch = vi.fn()
+
+describe('fetchImages', () => {
+  beforeEach(() => {
+    vi.resetAllMocks()
+  })
+
+  it('fetches images with filters', async () => {
+    const mockResponse = {
+      data: [{ id: '1', url: 'test.jpg' }],
+      pagination: { total: 1 },
+    }
+    
+    global.fetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => mockResponse,
+    })
+    
+    const result = await fetchImages({ tags: ['vacation'] })
+    
+    expect(global.fetch).toHaveBeenCalledWith(
+      expect.stringContaining('/api/v1/images'),
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({ tags: ['vacation'] }),
+      })
+    )
+    expect(result).toEqual(mockResponse)
+  })
+})
+```
+
+#### 4. Test Zustand Stores in Isolation
+
+```typescript
+// stores/authStore.test.ts
+import { renderHook, act } from '@testing-library/react'
+import { useAuthStore } from './authStore'
+
+describe('authStore', () => {
+  beforeEach(() => {
+    // Reset store state
+    useAuthStore.setState({
+      user: null,
+      token: null,
+      isAuthenticated: false,
+    })
+  })
+
+  it('updates authentication state after login', async () => {
+    const { result } = renderHook(() => useAuthStore())
+    
+    await act(async () => {
+      await result.current.verifyToken('test-token')
+    })
+    
+    expect(result.current.isAuthenticated).toBe(true)
+    expect(result.current.user).toBeDefined()
+  })
+
+  it('clears state on logout', () => {
+    const { result } = renderHook(() => useAuthStore())
+    
+    // Set initial state
+    act(() => {
+      useAuthStore.setState({
+        user: { id: '1', email: 'test@example.com' },
+        token: 'abc123',
+        isAuthenticated: true,
+      })
+    })
+    
+    act(() => {
+      result.current.logout()
+    })
+    
+    expect(result.current.user).toBeNull()
+    expect(result.current.token).toBeNull()
+    expect(result.current.isAuthenticated).toBe(false)
+  })
+})
+```
+
+#### 5. Test Custom Hooks
+
+```typescript
+// hooks/useIntersectionObserver.test.ts
+import { renderHook } from '@testing-library/react'
+import { useIntersectionObserver } from './useIntersectionObserver'
+
+describe('useIntersectionObserver', () => {
+  it('sets isVisible when element intersects', () => {
+    const { result } = renderHook(() => useIntersectionObserver())
+    
+    expect(result.current.isVisible).toBe(false)
+    
+    // Simulate intersection
+    const [entry] = mockIntersectionObserverEntry({ isIntersecting: true })
+    const callback = global.IntersectionObserver.mock.calls[0][0]
+    callback([entry])
+    
+    expect(result.current.isVisible).toBe(true)
+  })
+})
+```
+
+### Running Tests
+
+**Package.json scripts:**
+```json
+{
+  "scripts": {
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest --coverage",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "storybook": "storybook dev -p 6006",
+    "build-storybook": "storybook build"
+  }
+}
+```
+
+**CI Pipeline (.github/workflows/test.yml):**
+```yaml
+name: Tests
+
+on: [push, pull_request]
+
+jobs:
+  unit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm ci
+      - run: npm run test:coverage
+      - uses: codecov/codecov-action@v3
+
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+      - run: npm ci
+      - run: npx playwright install --with-deps
+      - run: npm run test:e2e
+      - uses: actions/upload-artifact@v3
+        if: failure()
+        with:
+          name: playwright-report
+          path: playwright-report/
+```
+
+---
+
+## Web Components: Not Recommended
+
+### Why Skip Web Components for This Project
+
+**Decision:** Use **React components** with Storybook, not Web Components.
+
+**Rationale:**
+
+**Cons of Web Components:**
+- **React friction:** Awkward integration with React's synthetic events
+- **TypeScript complexity:** Harder to type-check custom elements
+- **State management:** Can't use Zustand directly
+- **Learning curve:** Additional concepts for team to learn
+- **Tooling immaturity:** Less mature ecosystem compared to React
+- **Bundle size:** Shadow DOM polyfills for older browsers
+- **Developer experience:** Slower hot reload, less debugging support
+
+**Pros of React Components (Current Approach):**
+- ✅ **Team familiarity:** React is already the chosen framework
+- ✅ **Ecosystem:** Vast library ecosystem (Tailwind, React Hook Form, etc.)
+- ✅ **TypeScript:** First-class TypeScript support
+- ✅ **Tooling:** Excellent DevTools, Fast Refresh, ESLint plugins
+- ✅ **State management:** Seamless Zustand integration
+- ✅ **Testing:** Mature testing libraries (RTL, Vitest)
+
+**When Web Components Make Sense:**
+- Building a design system used across multiple frameworks
+- Creating embeddable widgets for third-party sites
+- Building framework-agnostic component library
+
+**For this project:** Stick with React components. Use Storybook for component isolation and documentation instead of Web Components.
+
+---
+
+## Maintainability Best Practices
+
+### 1. Code Organization
+
+**Follow Feature-Based Structure:**
+```
+src/
+├── features/
+│   ├── auth/
+│   │   ├── components/
+│   │   │   ├── LoginForm.tsx
+│   │   │   ├── LoginForm.test.tsx
+│   │   │   └── LoginForm.stories.tsx
+│   │   ├── hooks/
+│   │   │   ├── useAuth.ts
+│   │   │   └── useAuth.test.ts
+│   │   ├── stores/
+│   │   │   ├── authStore.ts
+│   │   │   └── authStore.test.ts
+│   │   └── utils/
+│   │       ├── validation.ts
+│   │       └── validation.test.ts
+│   ├── images/
+│   │   ├── components/
+│   │   ├── hooks/
+│   │   └── stores/
+│   └── upload/
+├── shared/
+│   ├── components/
+│   ├── hooks/
+│   └── utils/
+├── test/
+│   ├── setup.ts
+│   └── utils.tsx
+└── App.tsx
+```
+
+### 2. TypeScript Configuration
+
+**Strict Mode Enabled:**
+```json
+// tsconfig.json
+{
+  "compilerOptions": {
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "jsx": "react-jsx",
+    "module": "ESNext",
+    "target": "ESNext",
+    "lib": ["ESNext", "DOM", "DOM.Iterable"],
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  }
+}
+```
+
+### 3. ESLint & Prettier
+
+**ESLint Configuration:**
+```javascript
+// eslint.config.js
+import js from '@eslint/js'
+import react from 'eslint-plugin-react'
+import reactHooks from 'eslint-plugin-react-hooks'
+import tseslint from '@typescript-eslint/eslint-plugin'
+
+export default [
+  js.configs.recommended,
+  {
+    files: ['**/*.{ts,tsx}'],
+    plugins: {
+      '@typescript-eslint': tseslint,
+      'react': react,
+      'react-hooks': reactHooks,
+    },
+    rules: {
+      'react-hooks/rules-of-hooks': 'error',
+      'react-hooks/exhaustive-deps': 'warn',
+      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
+      '@typescript-eslint/explicit-function-return-type': 'off',
+      'no-console': ['warn', { allow: ['warn', 'error'] }],
+    },
+  },
+]
+```
+
+**Prettier Configuration:**
+```json
+// .prettierrc
+{
+  "semi": false,
+  "singleQuote": true,
+  "trailingComma": "es5",
+  "printWidth": 90,
+  "tabWidth": 2,
+  "arrowParens": "always"
+}
+```
+
+### 4. Pre-commit Hooks
+
+**Husky + Lint-Staged:**
+```bash
+npm install -D husky lint-staged
+npx husky init
+```
+
+```json
+// package.json
+{
+  "lint-staged": {
+    "*.{ts,tsx}": [
+      "eslint --fix",
+      "prettier --write",
+      "vitest related --run"
+    ]
+  }
+}
+```
+
+```bash
+# .husky/pre-commit
+npm run lint-staged
+```
+
+### 5. Component Documentation Standards
+
+**Use JSDoc for Component Props:**
+```typescript
+interface ImageCardProps {
+  /** Unique identifier for the image */
+  imageId: string
+  
+  /** URL to the thumbnail image (300px) */
+  thumbnailUrl: string
+  
+  /** Alt text for accessibility */
+  alt: string
+  
+  /** Array of tag names associated with the image */
+  tags: string[]
+  
+  /** Callback when image is selected/deselected */
+  onSelect: (id: string) => void
+  
+  /** Whether the image is currently selected */
+  selected: boolean
+}
+```
+
+### 6. Error Boundaries
+
+```tsx
+// components/ErrorBoundary.tsx
+import { Component, ErrorInfo, ReactNode } from 'react'
+
+interface Props {
+  children: ReactNode
+  fallback?: ReactNode
+}
+
+interface State {
+  hasError: boolean
+  error?: Error
+}
+
+export class ErrorBoundary extends Component<Props, State> {
+  state: State = {
+    hasError: false,
+  }
+
+  static getDerivedStateFromError(error: Error): State {
+    return { hasError: true, error }
+  }
+
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    console.error('ErrorBoundary caught:', error, errorInfo)
+    // Send to error tracking service (e.g., Sentry)
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return this.props.fallback || (
+        <div className="p-8 text-center">
+          <h2 className="text-xl font-bold text-red-600">Something went wrong</h2>
+          <p className="text-gray-600 mt-2">{this.state.error?.message}</p>
+          <button
+            onClick={() => this.setState({ hasError: false })}
+            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded"
+          >
+            Try again
+          </button>
+        </div>
+      )
+    }
+
+    return this.props.children
+  }
+}
+
+// Usage
+<ErrorBoundary>
+  <ImageGrid />
+</ErrorBoundary>
+```
+
+### 7. Performance Monitoring
+
+```typescript
+// utils/monitoring.ts
+export const measurePerformance = (metricName: string) => {
+  const start = performance.now()
+  
+  return () => {
+    const duration = performance.now() - start
+    console.log(`${metricName}: ${duration.toFixed(2)}ms`)
+    
+    // Send to analytics
+    if (window.gtag) {
+      window.gtag('event', 'timing_complete', {
+        name: metricName,
+        value: Math.round(duration),
+      })
+    }
+  }
+}
+
+// Usage
+const measure = measurePerformance('image-grid-render')
+// ... render logic
+measure()
+```
+
+---
+
 ## Summary
 
 The frontend architecture prioritizes **performance, developer experience, and user experience** with modern tooling. **Vite** provides lightning-fast development builds, **Tailwind CSS** enables rapid UI development with design consistency, **Zustand** offers lightweight state management, and specialized libraries handle image optimization and form interactions efficiently. This stack balances modern best practices with practical simplicity, avoiding over-engineering while delivering excellent performance for browsing and managing large photo collections.
