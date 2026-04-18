@@ -59,8 +59,11 @@ Diagram
 Propose separating the upload service from the main application to handle large file uploads more efficiently.
 ![Architecture Sketch](images/architecture%20sketch%20-%20revised%20whiteboard.png)
 
-## Ingestion service
-To efficiently handle large file uploads, we propose a separate ingestion service. This service will manage the upload process.
+## Ingestion Service
+
+To efficiently handle large file uploads, we propose a separate ingestion service built with **Go** for its superior concurrent processing and memory efficiency. The service handles multipart uploads, extracts EXIF metadata (with configurable privacy filtering for GPS/device data), generates thumbnails (300px) and web-optimized versions (1920px) supporting JPEG, PNG, HEIC, and RAW formats using `imaging` and `disintegration/imaging` libraries, enforces 15MB file size limits, and utilizes goroutines for parallel image processing. Go's performance advantage (3-5x faster than Node.js/Python for image operations) and efficient memory management make it ideal for handling concurrent uploads and CPU-intensive image transformations with minimal resource overhead.
+
+For detailed technical decisions, library comparisons, and implementation examples, see [Ingestion Service Architecture](ingestion-service-architecture.md).
 
 ## S3 Storage
 
