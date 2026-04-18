@@ -1,0 +1,1 @@
+{ "imageId": "IMG_20260120_001", "people": [ { "name": "Alice Johnson" }, { "name": "Bob Smith" } ], "dateRange": { "type": "exact", "exactDate": "2025-12-15" }, "occasion": { "category": "holiday", "eventName": "Winter Holidays 2025" } }

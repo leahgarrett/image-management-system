@@ -77,3 +77,7 @@ The REST API follows consistent patterns with `/api/v1` versioning, standardized
 For detailed technical decisions, alternatives considered, and implementation examples, see [Backend Architecture Details](backend-architecture.md).
 
 ## Frontend
+
+The frontend uses **Vite** as the build tool for instant HMR and optimized production builds, with **React 18** and **TypeScript** for type-safe component development. **Tailwind CSS** provides utility-first styling for rapid UI development with consistent design tokens, while **Zustand** handles lightweight global state management for auth, filters, and upload queue. Image optimization leverages `react-lazy-load-image-component` for viewport-based lazy loading and `react-window` for virtualized grid scrolling of large image collections. Form handling uses **React Hook Form** with Zod validation for the upload workflow, batch tagging interface, and multi-file drag-and-drop powered by `react-dropzone`, ensuring efficient re-renders and seamless UX for organizing family photo collections.
+
+For detailed technical decisions, alternatives considered, and implementation examples, see [Frontend Architecture Details](frontend-architecture.md).
