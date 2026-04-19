@@ -55,5 +55,6 @@ func ToJPEGIfNeeded(src, outDir string) (path string, cleanup func(), err error)
 		return "", noop, fmt.Errorf("jpeg encode: %w", err)
 	}
 
-	return outPath, func() { os.Remove(outPath) }, nil
+	// outDir is unique per job (UUID-based), so filename collision is not possible.
+	return outPath, func() { _ = os.Remove(outPath) }, nil
 }
