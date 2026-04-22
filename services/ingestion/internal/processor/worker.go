@@ -54,9 +54,10 @@ func (p *WorkerPool) Process(ctx context.Context, job UploadJob) ProcessResult {
 }
 
 // Submit dispatches a job to a goroutine and calls onDone with the result.
+// Uses context.Background so S3 uploads are not tied to the request lifetime.
 func (p *WorkerPool) Submit(ctx context.Context, job UploadJob, onDone func(ProcessResult)) {
 	go func() {
-		onDone(p.Process(ctx, job))
+		onDone(p.Process(context.Background(), job))
 	}()
 }
 

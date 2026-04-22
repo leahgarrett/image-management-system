@@ -63,6 +63,13 @@ func (h *Handlers) Upload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	submitted := false
+	defer func() {
+		if !submitted {
+			os.RemoveAll(jobOutDir)
+		}
+	}()
+
 	tmpPath := filepath.Join(jobOutDir, "upload"+ext)
 	dst, err := os.Create(tmpPath)
 	if err != nil {
@@ -99,6 +106,7 @@ func (h *Handlers) Upload(w http.ResponseWriter, r *http.Request) {
 			Metadata:     exifToMap(result.Metadata),
 		})
 	})
+	submitted = true
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusAccepted)
