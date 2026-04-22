@@ -1,211 +1,242 @@
 # Backend Architecture
 
-_Note:_ This document outlines the technical decisions for the Node.js backend, MongoDB data access, database schema design, authentication approach, and API design patterns.
+_Note:_ This document outlines the technical decisions for the backend API: language, database, authentication approach, and API design patterns.
 
-## Node.js Backend Framework
+## Decision History
 
-### Recommended Approach: Express
-
-**Rationale:**
-- Mature, stable ecosystem with extensive middleware availability
-- Large community support and well-documented patterns
-- Flexibility for custom implementations without opinionated structure
-- Low learning curve for team members
-- Excellent for RESTful API development
-
-### Alternatives Considered
-
-| Framework | Pros | Cons |
-|-----------|------|------|
-| **Express** | Mature ecosystem, flexible, simple, extensive middleware | Minimal structure, requires manual setup |
-| **Fastify** | High performance (2x faster), built-in schema validation, TypeScript support | Smaller ecosystem, less middleware available |
-| **NestJS** | TypeScript-first, Angular-like architecture, built-in DI, great for large teams | Steep learning curve, opinionated structure, overhead for smaller projects |
-
-**Decision:** Express provides the best balance of simplicity, maturity, and flexibility for this project's scope.
-
-**Documentation:** https://expressjs.com/
+| Date | Decision | Reason |
+|------|----------|--------|
+| Initial | Node.js + Express + MongoDB + Mongoose | Familiar stack, flexible document model for image metadata |
+| 2026-04-22 | **Changed to Go + PostgreSQL + sqlc** | Consistency with ingestion service (already Go); relational model is a better fit for structured metadata with filtering; sqlc provides better type safety than Mongoose |
 
 ---
 
-## MongoDB Access/ORM
+## Backend Language & Framework
 
-### Recommended Approach: Mongoose
+### Decision: Go with gorilla/mux
 
 **Rationale:**
-- Schema validation with built-in types and custom validators
-- Middleware hooks (pre/post save, validate) for business logic
-- Population for relationship management
-- Query builder with intuitive syntax
-- Excellent for document-oriented image metadata
+- Consistent with the ingestion service — one language, one toolchain, shared patterns
+- gorilla/mux already proven in the ingestion service
+- Strong typing catches errors at compile time
+- Good performance for a CRUD + search workload
 
 ### Alternatives Considered
 
 | Option | Pros | Cons |
 |--------|------|------|
-| **Mongoose** | Schema validation, middleware hooks, active records pattern, excellent docs | Performance overhead, abstraction layer |
-| **Prisma** | Type-safe queries, auto-generated types, great DX, migration management | Better for SQL databases, MongoDB support is beta, adds complexity |
-| **Native Driver** | Maximum performance, no abstraction overhead, full control | Manual validation, more boilerplate, no schema enforcement |
+| **Go + gorilla/mux** | Consistent with ingestion service, type-safe, mature | More boilerplate than Node.js frameworks |
+| **Node.js + Express** | Original choice; large ecosystem, fast to write | Different language from ingestion service; weaker typing |
+| **Go + chi** | Lightweight, idiomatic Go | Less familiar than gorilla/mux given existing usage |
 
-**Decision:** Mongoose's schema validation and middleware capabilities align well with our need for data consistency and business logic hooks (e.g., thumbnail generation triggers).
-
-s3Key will be in the ENVironment variables.
-
-**Example Schema:**
-```javascript
-const imageSchema = new mongoose.Schema({
-  imageId: { type: String, required: true, unique: true, index: true },
-  originalFilename: String,
-  thumbnailKey: String,
-  webOptimizedKey: String,
-  originalKey: String,
-  thumbnailFileSize: Number,
-  webOptimizedFileSize: Number,
-  originalFileSize: Number,
-  originalDimensions: { width: Number, height: Number },
-  uploadedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-  uploadedAt: { type: Date, default: Date.now },
-  collections: [{ type: String, index: true }],
-  tags: [{ type: String, index: true }],
-  people: [{ name: String, index: true }],
-  dateRange: {
-    type: { type: String, enum: ['exact', 'range', 'approximate'] },
-    exactDate: Date,
-    startDate: Date,
-    endDate: Date,
-    approximateDate: { year: Number, month: Number }
-  },
-  occasion: {
-    category: { type: String, enum: ['birthday', 'wedding', 'graduation', 'holiday', 'vacation', 'work_event', 'party', 'family_gathering', 'sports_event', 'concert', 'conference', 'ceremony', 'casual', 'other'] },
-    eventName: String
-  },
-  exif: { type: mongoose.Schema.Types.Mixed },
-  published: { type: Boolean, default: false },
-  moderationStatus: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' }
-});
-```
-
-**Documentation:** https://mongoosejs.com/
+**Documentation:** https://github.com/gorilla/mux
 
 ---
 
-## Database Schema Design
+## Database
 
-### Collections
+### Decision: PostgreSQL
 
-#### Images
-- Stores metadata, S3 references, EXIF data, tagging information
-- Indexed on: `imageId`, `uploadedBy`, `tags`, `people`, `uploadedAt`, `published`
-- Uses embedded documents for dateRange and occasion (no separate collections needed)
+**Why PostgreSQL over MongoDB:**
 
-#### Users
-```javascript
-{
-  _id: ObjectId,
-  email: String (unique, indexed),
-  name: String,
-  role: String (enum: ['admin', 'contributor']),
-  collections: [{ type: String }],
-  permissions: [String],
-  createdAt: Date,
-  lastLoginAt: Date,
-  invitedBy: ObjectId (ref: User),
-  status: String (enum: ['invited', 'active', 'suspended'])
-}
+The image metadata model is more relational than it first appears:
+- Users, images, comments, and tags have clear relationships with referential integrity requirements
+- Filtering queries (by person, date range, occasion, tag) are what SQL was built for
+- ACID transactions keep tag usage counts and image status consistent
+- JSONB columns handle the genuinely flexible parts (EXIF data, dateRange) without giving up the whole schema
+
+MongoDB's flexible document model was over-engineering for a schema that is mostly well-defined.
+
+### Database Access: sqlc
+
+**Rationale:**
+- Generates type-safe Go code directly from SQL queries — no ORM abstraction layer
+- Queries are plain SQL, easy to read and optimise
+- Compile-time safety: if a query doesn't match the schema, the build fails
+- No magic — what you write is what runs
+
+### Migrations: golang-migrate
+
+**Rationale:**
+- Simple file-based migrations (up/down SQL files)
+- CLI tool for running migrations in CI and locally
+- Works with PostgreSQL natively
+
+### Alternatives Considered
+
+| Option | Pros | Cons |
+|--------|------|------|
+| **PostgreSQL + sqlc** | Type-safe, plain SQL, great Go support | More upfront schema design, migration management required |
+| **MongoDB + Mongoose** | Original choice; flexible schema, rich middleware hooks | Weaker query typing, less suited to relational filtering |
+| **PostgreSQL + GORM** | ORM familiarity, less boilerplate | Magic behaviour, harder to optimise queries |
+| **PostgreSQL + pgx raw** | Maximum control | Too much boilerplate for CRUD operations |
+
+**Documentation:**
+- pgx: https://github.com/jackc/pgx
+- sqlc: https://sqlc.dev/
+- golang-migrate: https://github.com/golang-migrate/migrate
+
+---
+
+## Database Schema
+
+### Tables
+
+#### images
+```sql
+CREATE TABLE images (
+  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  image_id      TEXT NOT NULL UNIQUE,
+  original_filename TEXT,
+  thumbnail_key TEXT,
+  web_key       TEXT,
+  original_key  TEXT,
+  thumbnail_size BIGINT,
+  web_size       BIGINT,
+  original_size  BIGINT,
+  width         INTEGER,
+  height        INTEGER,
+  uploaded_by   UUID REFERENCES users(id),
+  uploaded_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+  published     BOOLEAN NOT NULL DEFAULT false,
+  moderation_status TEXT NOT NULL DEFAULT 'pending'
+    CHECK (moderation_status IN ('pending', 'approved', 'rejected')),
+  date_type     TEXT CHECK (date_type IN ('exact', 'range', 'approximate')),
+  exact_date    DATE,
+  start_date    DATE,
+  end_date      DATE,
+  approx_year   INTEGER,
+  approx_month  INTEGER,
+  occasion_category TEXT CHECK (occasion_category IN (
+    'birthday','wedding','graduation','holiday','vacation',
+    'work_event','party','family_gathering','sports_event',
+    'concert','conference','ceremony','casual','other'
+  )),
+  occasion_name TEXT,
+  exif          JSONB
+);
 ```
 
-#### Tags
-```javascript
-{
-  _id: ObjectId,
-  name: String (unique, indexed),
-  usageCount: Number,
-  createdAt: Date,
-  createdBy: ObjectId (ref: User)
-}
+#### users
+```sql
+CREATE TABLE users (
+  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  email         TEXT NOT NULL UNIQUE,
+  name          TEXT,
+  role          TEXT NOT NULL DEFAULT 'contributor'
+    CHECK (role IN ('admin', 'contributor')),
+  status        TEXT NOT NULL DEFAULT 'invited'
+    CHECK (status IN ('invited', 'active', 'suspended')),
+  invited_by    UUID REFERENCES users(id),
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+  last_login_at TIMESTAMPTZ
+);
 ```
 
-#### Comments
-```javascript
-{
-  _id: ObjectId,
-  imageId: String (indexed, ref: Image),
-  userId: ObjectId (ref: User),
-  text: String,
-  parentCommentId: ObjectId (ref: Comment), // for threading
-  createdAt: Date,
-  updatedAt: Date,
-  moderationStatus: String (enum: ['approved', 'flagged', 'hidden'])
-}
+#### tags
+```sql
+CREATE TABLE tags (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name        TEXT NOT NULL UNIQUE,
+  usage_count INTEGER NOT NULL DEFAULT 0,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+  created_by  UUID REFERENCES users(id)
+);
 ```
 
-**Design Principles:**
-- Denormalize frequently accessed data (embed people, dateRange in images)
-- Normalize entities that need independent management (users, comments)
-- Use indexes strategically for search and filter operations
-- Keep tag usage counts for suggestion algorithms
+#### image_tags
+```sql
+CREATE TABLE image_tags (
+  image_id UUID REFERENCES images(id) ON DELETE CASCADE,
+  tag_id   UUID REFERENCES tags(id)   ON DELETE CASCADE,
+  PRIMARY KEY (image_id, tag_id)
+);
+```
+
+#### image_people
+```sql
+CREATE TABLE image_people (
+  id       UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  image_id UUID NOT NULL REFERENCES images(id) ON DELETE CASCADE,
+  name     TEXT NOT NULL
+);
+```
+
+#### comments
+```sql
+CREATE TABLE comments (
+  id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  image_id          UUID NOT NULL REFERENCES images(id) ON DELETE CASCADE,
+  user_id           UUID NOT NULL REFERENCES users(id),
+  text              TEXT NOT NULL,
+  parent_comment_id UUID REFERENCES comments(id),
+  created_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
+  moderation_status TEXT NOT NULL DEFAULT 'approved'
+    CHECK (moderation_status IN ('approved', 'flagged', 'hidden'))
+);
+```
+
+#### magic_link_tokens
+```sql
+CREATE TABLE magic_link_tokens (
+  id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id    UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  token_hash TEXT NOT NULL UNIQUE,
+  expires_at TIMESTAMPTZ NOT NULL,
+  used_at    TIMESTAMPTZ
+);
+```
+
+### Key Indexes
+```sql
+CREATE INDEX ON images (uploaded_by);
+CREATE INDEX ON images (uploaded_at DESC);
+CREATE INDEX ON images (published);
+CREATE INDEX ON images (date_type, exact_date);
+CREATE INDEX ON image_people (name);
+CREATE INDEX ON image_tags (tag_id);
+CREATE INDEX ON comments (image_id);
+```
+
+### Design Principles
+- dateRange stored as flat columns (not nested JSON) for efficient range queries
+- EXIF stored as JSONB — flexible, rarely queried directly
+- Tags normalised into a separate table to support usage counts and suggestions
+- People embedded per-image (no global people registry in V1)
 
 ---
 
 ## Authentication & Authorization
 
-### Recommended Approach: JWT with Magic Link
+### Decision: JWT with Magic Link (unchanged)
 
-**Rationale:**
-- **Passwordless authentication** reduces security risks (no password storage, no password reset flows)
-- **Better UX** for family/non-technical users
-- **Email verification** built into the flow
-- **JWT tokens** provide stateless authentication, easy to scale
-- **Role-based access control** with permissions stored in token
+Magic link auth remains the right choice — passwordless is better UX for family/non-technical users.
 
-### Implementation Pattern
+**Magic Link Flow:**
+1. User enters email
+2. Backend generates a short-lived token (15 min), stores `hash(token)` in `magic_link_tokens`
+3. Email sent with magic link: `https://app.example.com/auth/verify?token=xyz`
+4. User clicks link → backend validates token hash, marks `used_at`, issues JWT
+5. JWT stored in httpOnly cookie
 
-1. **Magic Link Flow:**
-   - User enters email
-   - Backend generates short-lived token (15 min expiry), stores in Redis/MongoDB
-   - Email sent with magic link: `https://app.example.com/auth/verify?token=xyz`
-   - User clicks link, backend validates token, issues JWT
-   - JWT stored in httpOnly cookie for security
-
-2. **JWT Payload:**
-```javascript
+**JWT Payload:**
+```json
 {
-  userId: "507f1f77bcf86cd799439011",
-  email: "user@example.com",
-  role: "contributor",
-  permissions: ["images.view", "images.upload", "images.tag"],
-  iat: 1642546800,
-  exp: 1642633200  // 24 hour expiry
+  "userId": "507f1f77bcf86cd799439011",
+  "email": "user@example.com",
+  "role": "contributor",
+  "permissions": ["images.view", "images.upload", "images.tag"],
+  "iat": 1642546800,
+  "exp": 1642633200
 }
 ```
 
-3. **Authorization Middleware:**
-```javascript
-const requirePermission = (permission) => {
-  return (req, res, next) => {
-    if (!req.user.permissions.includes(permission)) {
-      return res.status(403).json({ error: 'Insufficient permissions' });
-    }
-    next();
-  };
-};
-
-// Usage
-router.post('/images', requirePermission('images.upload'), uploadController);
-```
-
-**Libraries:**
-- `jsonwebtoken` for JWT generation/verification
-- `nodemailer` for email delivery
-- `express-rate-limit` to prevent magic link abuse
-
-**Alternatives Considered:**
-- Traditional email/password: More complex, security burden
-- OAuth (Google/GitHub): External dependency, not all family members have accounts
-- Session-based: Requires server-side storage, harder to scale
-
-**Documentation:**
-- JWT: https://jwt.io/
-- nodemailer: https://nodemailer.com/
+**Go Libraries:**
+- `golang-jwt/jwt/v5` — JWT generation/verification (already used in ingestion service)
+- `net/smtp` or AWS SES SDK — email delivery
+- `golang.org/x/crypto` — token hashing (bcrypt or SHA-256)
+- `golang.org/x/time/rate` — rate limiting magic link requests
 
 ---
 
@@ -215,12 +246,11 @@ router.post('/images', requirePermission('images.upload'), uploadController);
 
 **Base URL:** `/api/v1`
 
-**Endpoint Conventions:**
 ```
 GET    /api/v1/images              # List images (with filters)
 GET    /api/v1/images/:id          # Get single image
-POST   /api/v1/images              # Upload image
-PATCH  /api/v1/images/:id          # Update metadata
+POST   /api/v1/images              # Register image (after ingestion completes)
+PATCH  /api/v1/images/:id          # Update metadata/tags
 DELETE /api/v1/images/:id          # Delete image
 
 GET    /api/v1/images/:id/comments # Get comments for image
@@ -240,55 +270,16 @@ PATCH  /api/v1/users/:id/role      # Update user role (admin only)
 
 ### Error Handling
 
-**Standardized Error Response (RFC 7807):**
-```javascript
+**Standardized Error Response (RFC 7807) — consistent with ingestion service:**
+```json
 {
-  "type": "https://api.example.com/errors/validation-error",
+  "type": "validation_error",
   "title": "Validation Error",
   "status": 400,
   "detail": "Image file size exceeds maximum allowed (15MB)",
-  "instance": "/api/v1/images",
-  "errors": [
-    {
-      "field": "file",
-      "message": "File size must be less than 15MB"
-    }
-  ]
+  "instance": "/api/v1/images"
 }
 ```
-
-**Centralized Error Handler:**
-```javascript
-// middleware/errorHandler.js
-module.exports = (err, req, res, next) => {
-  const status = err.status || 500;
-  const response = {
-    type: err.type || 'about:blank',
-    title: err.title || 'Internal Server Error',
-    status: status,
-    detail: err.message,
-    instance: req.path
-  };
-  
-  if (err.errors) response.errors = err.errors;
-  if (process.env.NODE_ENV === 'development') response.stack = err.stack;
-  
-  res.status(status).json(response);
-};
-```
-
-**HTTP Status Codes:**
-- `200` OK - Successful GET, PATCH
-- `201` Created - Successful POST
-- `204` No Content - Successful DELETE
-- `400` Bad Request - Validation errors
-- `401` Unauthorized - Missing/invalid token
-- `403` Forbidden - Insufficient permissions
-- `404` Not Found - Resource doesn't exist
-- `409` Conflict - Duplicate resource
-- `413` Payload Too Large - File size exceeded
-- `429` Too Many Requests - Rate limit exceeded
-- `500` Internal Server Error - Unexpected errors
 
 ### Query Parameters for Filtering
 
@@ -297,7 +288,7 @@ GET /api/v1/images?tags=vacation,beach&people=John&dateFrom=2024-01-01&dateTo=20
 ```
 
 **Response Format:**
-```javascript
+```json
 {
   "data": [...],
   "pagination": {
@@ -311,51 +302,15 @@ GET /api/v1/images?tags=vacation,beach&people=John&dateFrom=2024-01-01&dateTo=20
 
 ---
 
-## Proof of Concept Example
-
-**Express + Mongoose Basic Setup:**
-```javascript
-// server.js
-const express = require('express');
-const mongoose = require('mongoose');
-const helmet = require('helmet');
-const cors = require('cors');
-const rateLimit = require('express-rate-limit');
-
-const app = express();
-
-// Security middleware
-app.use(helmet());
-app.use(cors({ origin: process.env.FRONTEND_URL, credentials: true }));
-app.use(express.json({ limit: '10mb' }));
-
-// Rate limiting
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100
-});
-app.use('/api/', limiter);
-
-// Database connection
-mongoose.connect(process.env.MONGODB_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true
-});
-
-// Routes
-app.use('/api/v1/images', require('./routes/images'));
-app.use('/api/v1/auth', require('./routes/auth'));
-app.use('/api/v1/users', require('./routes/users'));
-
-// Error handling
-app.use(require('./middleware/errorHandler'));
-
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
-```
-
----
-
 ## Summary
 
-This architecture prioritizes **simplicity, security, and scalability** while leveraging proven technologies. Express and Mongoose provide a solid foundation with minimal complexity, JWT with magic links offers excellent security and UX, and the REST API design follows industry standards for consistency and maintainability.
+| Concern | Decision |
+|---------|----------|
+| Language | Go |
+| HTTP framework | gorilla/mux |
+| Database | PostgreSQL |
+| Query generation | sqlc |
+| Migrations | golang-migrate |
+| Auth | JWT + magic link |
+| JWT library | golang-jwt/jwt/v5 |
+| Error format | RFC 7807 (consistent with ingestion service) |
