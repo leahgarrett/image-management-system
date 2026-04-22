@@ -13,6 +13,8 @@ type Config struct {
 	JWTSecret        string
 	AWSRegion        string
 	S3Bucket         string
+	StorageBackend   string // "s3" (default) or "local"
+	LocalStorageDir  string // used when StorageBackend=local
 }
 
 func Load() (*Config, error) {
@@ -21,14 +23,23 @@ func Load() (*Config, error) {
 		return nil, fmt.Errorf("JWT_SECRET is required")
 	}
 
-	awsRegion := os.Getenv("AWS_REGION")
-	if awsRegion == "" {
-		return nil, fmt.Errorf("AWS_REGION is required")
+	storageBackend := getEnvOrDefault("STORAGE_BACKEND", "s3")
+	if storageBackend != "s3" && storageBackend != "local" {
+		return nil, fmt.Errorf("STORAGE_BACKEND must be 's3' or 'local'")
 	}
 
-	s3Bucket := os.Getenv("S3_BUCKET")
-	if s3Bucket == "" {
-		return nil, fmt.Errorf("S3_BUCKET is required")
+	var awsRegion, s3Bucket, localStorageDir string
+	if storageBackend == "s3" {
+		awsRegion = os.Getenv("AWS_REGION")
+		if awsRegion == "" {
+			return nil, fmt.Errorf("AWS_REGION is required when STORAGE_BACKEND=s3")
+		}
+		s3Bucket = os.Getenv("S3_BUCKET")
+		if s3Bucket == "" {
+			return nil, fmt.Errorf("S3_BUCKET is required when STORAGE_BACKEND=s3")
+		}
+	} else {
+		localStorageDir = getEnvOrDefault("LOCAL_STORAGE_DIR", "local-storage")
 	}
 
 	port := getEnvOrDefault("PORT", "8080")
@@ -58,6 +69,8 @@ func Load() (*Config, error) {
 		JWTSecret:        jwtSecret,
 		AWSRegion:        awsRegion,
 		S3Bucket:         s3Bucket,
+		StorageBackend:   storageBackend,
+		LocalStorageDir:  localStorageDir,
 	}, nil
 }
 

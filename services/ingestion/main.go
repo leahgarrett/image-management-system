@@ -19,17 +19,26 @@ func main() {
 		log.Fatalf("config: %v", err)
 	}
 
-	s3Client, err := storage.NewS3Client(storage.Config{
-		Region: cfg.AWSRegion,
-		Bucket: cfg.S3Bucket,
-	})
-	if err != nil {
-		log.Fatalf("S3 client: %v", err)
+	var uploader processor.Uploader
+	if cfg.StorageBackend == "local" {
+		uploader, err = storage.NewLocalClient(cfg.LocalStorageDir)
+		if err != nil {
+			log.Fatalf("local storage: %v", err)
+		}
+		log.Printf("using local storage at %s", cfg.LocalStorageDir)
+	} else {
+		uploader, err = storage.NewS3Client(storage.Config{
+			Region: cfg.AWSRegion,
+			Bucket: cfg.S3Bucket,
+		})
+		if err != nil {
+			log.Fatalf("S3 client: %v", err)
+		}
 	}
 
 	tmpDir := os.TempDir()
 	store := jobs.NewStore()
-	pool := processor.NewWorkerPool(cfg.WorkerCount, s3Client)
+	pool := processor.NewWorkerPool(cfg.WorkerCount, uploader)
 	handlers := api.NewHandlers(store, pool, cfg.MaxFileSizeBytes, tmpDir)
 	router := api.NewRouter(handlers, cfg.JWTSecret)
 
