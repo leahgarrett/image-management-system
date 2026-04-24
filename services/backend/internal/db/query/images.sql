@@ -16,20 +16,20 @@ SELECT * FROM images WHERE image_id = @image_id LIMIT 1;
 
 -- name: ListImages :many
 SELECT * FROM images
-WHERE (@occasion_category::text IS NULL OR occasion_category = @occasion_category)
+WHERE (sqlc.narg('occasion_category')::text IS NULL OR occasion_category = sqlc.narg('occasion_category')::text)
 ORDER BY uploaded_at DESC
-LIMIT @lim OFFSET @off;
+LIMIT sqlc.arg('lim') OFFSET sqlc.arg('off');
 
 -- name: UpdateImage :one
 UPDATE images SET
-  published         = COALESCE(@published, published),
-  date_type         = COALESCE(@date_type, date_type),
-  exact_date        = COALESCE(@exact_date, exact_date),
-  start_date        = COALESCE(@start_date, start_date),
-  end_date          = COALESCE(@end_date, end_date),
-  occasion_category = COALESCE(@occasion_category, occasion_category),
-  occasion_name     = COALESCE(@occasion_name, occasion_name)
-WHERE id = @id
+  published         = COALESCE(sqlc.narg('published'), published),
+  date_type         = COALESCE(sqlc.narg('date_type'), date_type),
+  exact_date        = COALESCE(sqlc.narg('exact_date'), exact_date),
+  start_date        = COALESCE(sqlc.narg('start_date'), start_date),
+  end_date          = COALESCE(sqlc.narg('end_date'), end_date),
+  occasion_category = COALESCE(sqlc.narg('occasion_category'), occasion_category),
+  occasion_name     = COALESCE(sqlc.narg('occasion_name'), occasion_name)
+WHERE id = sqlc.arg('id')
 RETURNING *;
 
 -- name: DeleteImage :exec

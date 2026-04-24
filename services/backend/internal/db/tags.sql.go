@@ -7,7 +7,6 @@ package db
 
 import (
 	"context"
-	"database/sql"
 
 	"github.com/google/uuid"
 )
@@ -155,12 +154,12 @@ func (q *Queries) RemoveImageTag(ctx context.Context, arg RemoveImageTagParams) 
 
 const searchTags = `-- name: SearchTags :many
 SELECT id, name, usage_count, created_at, created_by FROM tags
-WHERE name ILIKE '%' || $1 || '%'
+WHERE name ILIKE '%' || $1::text || '%'
 ORDER BY usage_count DESC
 LIMIT 10
 `
 
-func (q *Queries) SearchTags(ctx context.Context, query sql.NullString) ([]Tag, error) {
+func (q *Queries) SearchTags(ctx context.Context, query string) ([]Tag, error) {
 	rows, err := q.db.QueryContext(ctx, searchTags, query)
 	if err != nil {
 		return nil, err

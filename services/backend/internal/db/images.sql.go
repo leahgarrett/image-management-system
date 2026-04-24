@@ -219,15 +219,15 @@ func (q *Queries) ListImagePeople(ctx context.Context, imageID uuid.UUID) ([]Ima
 
 const listImages = `-- name: ListImages :many
 SELECT id, image_id, original_filename, thumbnail_key, web_key, original_key, thumbnail_size, web_size, original_size, width, height, uploaded_by, uploaded_at, published, moderation_status, date_type, exact_date, start_date, end_date, approx_year, approx_month, occasion_category, occasion_name, exif FROM images
-WHERE ($1::text IS NULL OR occasion_category = $1)
+WHERE ($1::text IS NULL OR occasion_category = $1::text)
 ORDER BY uploaded_at DESC
 LIMIT $3 OFFSET $2
 `
 
 type ListImagesParams struct {
-	OccasionCategory string `json:"occasion_category"`
-	Off              int32  `json:"off"`
-	Lim              int32  `json:"lim"`
+	OccasionCategory sql.NullString `json:"occasion_category"`
+	Off              int32          `json:"off"`
+	Lim              int32          `json:"lim"`
 }
 
 func (q *Queries) ListImages(ctx context.Context, arg ListImagesParams) ([]Image, error) {
@@ -292,7 +292,7 @@ RETURNING id, image_id, original_filename, thumbnail_key, web_key, original_key,
 `
 
 type UpdateImageParams struct {
-	Published        bool           `json:"published"`
+	Published        sql.NullBool   `json:"published"`
 	DateType         sql.NullString `json:"date_type"`
 	ExactDate        sql.NullTime   `json:"exact_date"`
 	StartDate        sql.NullTime   `json:"start_date"`

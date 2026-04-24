@@ -6,7 +6,6 @@ package db
 
 import (
 	"context"
-	"database/sql"
 
 	"github.com/google/uuid"
 )
@@ -34,7 +33,7 @@ type Querier interface {
 	ListUsers(ctx context.Context) ([]User, error)
 	MarkTokenUsed(ctx context.Context, id uuid.UUID) error
 	RemoveImageTag(ctx context.Context, arg RemoveImageTagParams) error
-	SearchTags(ctx context.Context, query sql.NullString) ([]Tag, error)
+	SearchTags(ctx context.Context, query string) ([]Tag, error)
 	UpdateImage(ctx context.Context, arg UpdateImageParams) (Image, error)
 	UpdateUserLastLogin(ctx context.Context, id uuid.UUID) error
 	UpdateUserRole(ctx context.Context, arg UpdateUserRoleParams) (User, error)

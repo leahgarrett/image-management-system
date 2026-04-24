@@ -9,7 +9,7 @@ SELECT * FROM tags ORDER BY name;
 
 -- name: SearchTags :many
 SELECT * FROM tags
-WHERE name ILIKE '%' || @query || '%'
+WHERE name ILIKE '%' || sqlc.arg('query')::text || '%'
 ORDER BY usage_count DESC
 LIMIT 10;
 
