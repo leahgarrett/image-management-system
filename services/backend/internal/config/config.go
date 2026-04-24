@@ -42,6 +42,7 @@ func Load() (*Config, error) {
 
 	smtpHost := os.Getenv("SMTP_HOST")
 	smtpFrom := os.Getenv("SMTP_FROM")
+	smtpPort := 587
 
 	if !devMode {
 		if smtpHost == "" {
@@ -50,15 +51,13 @@ func Load() (*Config, error) {
 		if smtpFrom == "" {
 			return nil, fmt.Errorf("SMTP_FROM is required when DEV_MODE is not true")
 		}
-	}
-
-	smtpPort := 587
-	if v := os.Getenv("SMTP_PORT"); v != "" {
-		n, err := strconv.Atoi(v)
-		if err != nil || n < 1 {
-			return nil, fmt.Errorf("SMTP_PORT must be a positive integer")
+		if v := os.Getenv("SMTP_PORT"); v != "" {
+			n, err := strconv.Atoi(v)
+			if err != nil || n < 1 {
+				return nil, fmt.Errorf("SMTP_PORT must be a positive integer")
+			}
+			smtpPort = n
 		}
-		smtpPort = n
 	}
 
 	return &Config{
