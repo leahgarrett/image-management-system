@@ -5,3 +5,4 @@ CREATE TABLE image_people (
 );
 
 CREATE INDEX ON image_people (name);
+CREATE UNIQUE INDEX ON image_people (image_id, name);
