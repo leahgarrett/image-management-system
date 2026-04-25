@@ -236,3 +236,164 @@ func (h *Handlers) GetImage(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(imageToResponse(img, people, tags))
 }
+
+type updateImageRequest struct {
+	People           []string `json:"people"`
+	Tags             []string `json:"tags"`
+	DateType         string   `json:"dateType"`
+	ExactDate        string   `json:"exactDate"`
+	OccasionCategory string   `json:"occasionCategory"`
+	OccasionName     string   `json:"occasionName"`
+	Published        *bool    `json:"published"`
+}
+
+// UpdateImage handles PATCH /api/v1/images/{id}.
+func (h *Handlers) UpdateImage(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	idStr := vars["id"]
+
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		writeError(w, r, errValidation("invalid image id"))
+		return
+	}
+
+	img, err := h.q.GetImageByID(r.Context(), id)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			writeError(w, r, errNotFound("image not found"))
+			return
+		}
+		writeError(w, r, errInternal("failed to get image"))
+		return
+	}
+
+	var req updateImageRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, r, errValidation("invalid request body"))
+		return
+	}
+
+	ctx := r.Context()
+
+	// Update people: delete all, then re-insert.
+	if req.People != nil {
+		if err := h.q.DeleteImagePeople(ctx, img.ID); err != nil {
+			writeError(w, r, errInternal("failed to update people"))
+			return
+		}
+		for _, name := range req.People {
+			if _, err := h.q.CreateImagePerson(ctx, db.CreateImagePersonParams{
+				ImageID: img.ID,
+				Name:    name,
+			}); err != nil {
+				writeError(w, r, errInternal("failed to add person"))
+				return
+			}
+		}
+	}
+
+	// Update tags: diff existing vs requested.
+	if req.Tags != nil {
+		existingTags, err := h.q.ListImageTags(ctx, img.ID)
+		if err != nil {
+			writeError(w, r, errInternal("failed to list tags"))
+			return
+		}
+
+		existingSet := map[string]db.Tag{}
+		for _, t := range existingTags {
+			existingSet[t.Name] = t
+		}
+		requestedSet := map[string]struct{}{}
+		for _, name := range req.Tags {
+			requestedSet[name] = struct{}{}
+		}
+
+		for name := range requestedSet {
+			if _, found := existingSet[name]; !found {
+				tag, err := h.q.CreateTag(ctx, db.CreateTagParams{Name: name})
+				if err != nil {
+					writeError(w, r, errInternal("failed to create tag"))
+					return
+				}
+				if err := h.q.AddImageTag(ctx, db.AddImageTagParams{ImageID: img.ID, TagID: tag.ID}); err != nil {
+					writeError(w, r, errInternal("failed to add image tag"))
+					return
+				}
+				if err := h.q.IncrementTagUsage(ctx, tag.ID); err != nil {
+					writeError(w, r, errInternal("failed to increment tag usage"))
+					return
+				}
+			}
+		}
+
+		for name, tag := range existingSet {
+			if _, found := requestedSet[name]; !found {
+				if err := h.q.RemoveImageTag(ctx, db.RemoveImageTagParams{ImageID: img.ID, TagID: tag.ID}); err != nil {
+					writeError(w, r, errInternal("failed to remove image tag"))
+					return
+				}
+				if err := h.q.DecrementTagUsage(ctx, tag.ID); err != nil {
+					writeError(w, r, errInternal("failed to decrement tag usage"))
+					return
+				}
+			}
+		}
+	}
+
+	params := db.UpdateImageParams{ID: img.ID}
+	if req.Published != nil {
+		params.Published = sql.NullBool{Bool: *req.Published, Valid: true}
+	}
+	if req.DateType != "" {
+		params.DateType = sql.NullString{String: req.DateType, Valid: true}
+	}
+	if req.ExactDate != "" {
+		t, parseErr := time.Parse("2006-01-02", req.ExactDate)
+		if parseErr == nil {
+			params.ExactDate = sql.NullTime{Time: t, Valid: true}
+		}
+	}
+	if req.OccasionCategory != "" {
+		params.OccasionCategory = sql.NullString{String: req.OccasionCategory, Valid: true}
+	}
+	if req.OccasionName != "" {
+		params.OccasionName = sql.NullString{String: req.OccasionName, Valid: true}
+	}
+
+	updatedImg, err := h.q.UpdateImage(ctx, params)
+	if err != nil {
+		writeError(w, r, errInternal("failed to update image"))
+		return
+	}
+
+	people, _ := h.q.ListImagePeople(ctx, updatedImg.ID)
+	tags, _ := h.q.ListImageTags(ctx, updatedImg.ID)
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(imageToResponse(updatedImg, people, tags))
+}
+
+// DeleteImage handles DELETE /api/v1/images/{id}.
+func (h *Handlers) DeleteImage(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	idStr := vars["id"]
+
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		writeError(w, r, errValidation("invalid image id"))
+		return
+	}
+
+	if err := h.q.DeleteImage(r.Context(), id); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			writeError(w, r, errNotFound("image not found"))
+			return
+		}
+		writeError(w, r, errInternal("failed to delete image"))
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
