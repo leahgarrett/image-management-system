@@ -1,0 +1,41 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { useAuthStore } from './authStore'
+
+vi.mock('@/api/client', () => ({
+  apiFetch: vi.fn(),
+  ApiError: class ApiError extends Error {
+    constructor(public status: number, public detail: string) { super(detail) }
+  },
+}))
+
+import { apiFetch } from '@/api/client'
+
+beforeEach(() => {
+  useAuthStore.setState({ user: null })
+  vi.clearAllMocks()
+})
+
+describe('fetchCurrentUser', () => {
+  it('sets user when /users/me succeeds', async () => {
+    vi.mocked(apiFetch).mockResolvedValue({ id: 'u1', email: 'a@b.com', role: 'admin' })
+    await useAuthStore.getState().fetchCurrentUser()
+    expect(useAuthStore.getState().user).toEqual({ id: 'u1', email: 'a@b.com', role: 'admin' })
+  })
+
+  it('sets user to null on 401', async () => {
+    const { ApiError } = await import('@/api/client')
+    vi.mocked(apiFetch).mockRejectedValue(new ApiError(401, 'Unauthorized'))
+    await useAuthStore.getState().fetchCurrentUser()
+    expect(useAuthStore.getState().user).toBeNull()
+  })
+})
+
+describe('logout', () => {
+  it('clears user and calls /auth/logout', async () => {
+    useAuthStore.setState({ user: { id: 'u1', email: 'a@b.com', role: 'admin' } })
+    vi.mocked(apiFetch).mockResolvedValue(undefined)
+    await useAuthStore.getState().logout()
+    expect(useAuthStore.getState().user).toBeNull()
+    expect(apiFetch).toHaveBeenCalledWith('/api/v1/auth/logout', { method: 'POST' })
+  })
+})
