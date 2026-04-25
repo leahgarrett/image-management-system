@@ -16,9 +16,7 @@ export function ImageCard({ image }: Props) {
           bg="gray.1"
           style={{ overflow: 'hidden' }}
         >
-          <Text size="xs" c="dimmed" ta="center" px="xs">
-            {image.originalFilename}
-          </Text>
+          <Text size="xs" c="dimmed">No preview</Text>
         </Stack>
       </Card.Section>
       <Stack mt="sm" gap="xs">
@@ -27,8 +25,8 @@ export function ImageCard({ image }: Props) {
         </Text>
         {image.tags.length > 0 && (
           <Group gap="xs">
-            {image.tags.slice(0, 3).map((tag) => (
-              <Badge key={tag} size="xs" variant="light">
+            {image.tags.slice(0, 3).map((tag, i) => (
+              <Badge key={`${tag}-${i}`} size="xs" variant="light">
                 {tag}
               </Badge>
             ))}

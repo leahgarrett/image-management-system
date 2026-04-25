@@ -2,11 +2,10 @@ import { SimpleGrid, Text, Center, Loader } from '@mantine/core'
 import { ImageCard } from './ImageCard'
 import type { ImageSummary } from './types'
 
-interface Props {
-  images: ImageSummary[]
-  loading: boolean
-  error: string | null
-}
+type Props =
+  | { loading: true; error?: never; images?: never }
+  | { loading?: false; error: string; images?: never }
+  | { loading?: false; error?: null; images: ImageSummary[] }
 
 export function ImageGrid({ images, loading, error }: Props) {
   if (loading) {
@@ -23,7 +22,7 @@ export function ImageGrid({ images, loading, error }: Props) {
       </Center>
     )
   }
-  if (images.length === 0) {
+  if (!images || images.length === 0) {
     return (
       <Center h={200}>
         <Text c="dimmed">No images found.</Text>
