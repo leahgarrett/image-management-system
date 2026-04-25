@@ -27,7 +27,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   fetchCurrentUser: async () => {
     try {
       const user = await apiFetch<User>('/api/v1/users/me')
-      set({ user })
+      if (user !== undefined) set({ user })
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) {
         set({ user: null })

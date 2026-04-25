@@ -4,7 +4,11 @@ import { useAuthStore } from './authStore'
 vi.mock('@/api/client', () => ({
   apiFetch: vi.fn(),
   ApiError: class ApiError extends Error {
-    constructor(public status: number, public detail: string) { super(detail) }
+    constructor(
+      public status: number,
+      public detail: string,
+      public type: string = 'error',
+    ) { super(detail) }
   },
 }))
 
@@ -27,6 +31,17 @@ describe('fetchCurrentUser', () => {
     vi.mocked(apiFetch).mockRejectedValue(new ApiError(401, 'Unauthorized'))
     await useAuthStore.getState().fetchCurrentUser()
     expect(useAuthStore.getState().user).toBeNull()
+  })
+})
+
+describe('requestMagicLink', () => {
+  it('calls POST /auth/login with email', async () => {
+    vi.mocked(apiFetch).mockResolvedValue(undefined)
+    await useAuthStore.getState().requestMagicLink('user@example.com')
+    expect(apiFetch).toHaveBeenCalledWith('/api/v1/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ email: 'user@example.com' }),
+    })
   })
 })
 
