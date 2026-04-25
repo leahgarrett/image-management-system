@@ -45,6 +45,18 @@ describe('useFilterStore', () => {
     expect(useFilterStore.getState().offset).toBe(0)
   })
 
+  it('setPeople resets offset to 0', () => {
+    useFilterStore.setState({ offset: 40 })
+    useFilterStore.getState().setPeople('Alice')
+    expect(useFilterStore.getState().offset).toBe(0)
+  })
+
+  it('setOccasion resets offset to 0', () => {
+    useFilterStore.setState({ offset: 40 })
+    useFilterStore.getState().setOccasion('birthday')
+    expect(useFilterStore.getState().offset).toBe(0)
+  })
+
   it('nextPage increments offset by PAGE_SIZE (20)', () => {
     useFilterStore.setState({ offset: 0 })
     useFilterStore.getState().nextPage()
