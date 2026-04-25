@@ -47,6 +47,22 @@ describe('fetchCurrentUser', () => {
     await useAuthStore.getState().fetchCurrentUser()
     expect(useAuthStore.getState().isInitialising).toBe(false)
   })
+
+  it('sets isInitialising to false on non-401 error without clearing user', async () => {
+    useAuthStore.setState({ isInitialising: true, user: { id: 'u1', email: 'a@b.com', role: 'admin' } })
+    vi.mocked(apiFetch).mockRejectedValue(new Error('Network failure'))
+    await useAuthStore.getState().fetchCurrentUser()
+    expect(useAuthStore.getState().isInitialising).toBe(false)
+    expect(useAuthStore.getState().user).toEqual({ id: 'u1', email: 'a@b.com', role: 'admin' })
+  })
+
+  it('sets isInitialising to false when response is undefined', async () => {
+    useAuthStore.setState({ isInitialising: true })
+    vi.mocked(apiFetch).mockResolvedValue(undefined)
+    await useAuthStore.getState().fetchCurrentUser()
+    expect(useAuthStore.getState().isInitialising).toBe(false)
+    expect(useAuthStore.getState().user).toBeNull()
+  })
 })
 
 describe('requestMagicLink', () => {
@@ -67,5 +83,12 @@ describe('logout', () => {
     await useAuthStore.getState().logout()
     expect(useAuthStore.getState().user).toBeNull()
     expect(apiFetch).toHaveBeenCalledWith('/api/v1/auth/logout', { method: 'POST' })
+  })
+
+  it('clears user even when API call fails', async () => {
+    useAuthStore.setState({ user: { id: 'u1', email: 'a@b.com', role: 'admin' } })
+    vi.mocked(apiFetch).mockRejectedValue(new Error('Network failure'))
+    await expect(useAuthStore.getState().logout()).resolves.toBeUndefined()
+    expect(useAuthStore.getState().user).toBeNull()
   })
 })
