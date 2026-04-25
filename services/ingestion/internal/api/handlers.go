@@ -50,7 +50,7 @@ func (h *Handlers) Upload(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ext := strings.ToLower(filepath.Ext(header.Filename))
-	allowed := map[string]bool{".jpg": true, ".jpeg": true, ".png": true, ".gif": true, ".heic": true, ".heif": true, ".tiff": true, ".bmp": true}
+	allowed := map[string]bool{".jpg": true, ".jpeg": true, ".png": true, ".gif": true, ".heic": true, ".heif": true, ".tiff": true, ".bmp": true, ".webp": true}
 	if !allowed[ext] {
 		writeError(w, r, errValidation("unsupported file type: "+ext))
 		return
