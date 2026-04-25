@@ -95,19 +95,28 @@ func (h *Handlers) InviteUser(w http.ResponseWriter, r *http.Request) {
 
 	// Generate magic link token (72h expiry for invitations).
 	rawBytes := make([]byte, 32)
-	rand.Read(rawBytes)
+	if _, err := rand.Read(rawBytes); err != nil {
+		writeError(w, r, errInternal("failed to generate token"))
+		return
+	}
 	rawToken := hex.EncodeToString(rawBytes)
 	hash := sha256.Sum256([]byte(rawToken))
 	tokenHash := hex.EncodeToString(hash[:])
 
-	h.q.CreateMagicLinkToken(r.Context(), db.CreateMagicLinkTokenParams{
+	if _, err := h.q.CreateMagicLinkToken(r.Context(), db.CreateMagicLinkTokenParams{
 		UserID:    user.ID,
 		TokenHash: tokenHash,
 		ExpiresAt: time.Now().Add(72 * time.Hour),
-	})
+	}); err != nil {
+		writeError(w, r, errInternal("failed to create invite token"))
+		return
+	}
 
 	magicLinkURL := fmt.Sprintf("%s/auth/verify?token=%s", h.appURL, rawToken)
-	h.mailer.SendMagicLink(req.Email, magicLinkURL)
+	if err := h.mailer.SendMagicLink(req.Email, magicLinkURL); err != nil {
+		writeError(w, r, errInternal("failed to send invite email"))
+		return
+	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)

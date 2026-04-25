@@ -221,7 +221,7 @@ func (m *mockQuerier) UpdateUserStatus(ctx context.Context, arg db.UpdateUserSta
 // --- Auth handler tests ---
 
 func newTestHandlers(q db.Querier) *api.Handlers {
-	return api.NewHandlers(q, mailer.NewLogMailer(), "http://localhost:3000", testSecret)
+	return api.NewHandlers(q, mailer.NewLogMailer(), "http://localhost:3000", testSecret, true)
 }
 
 func TestLogin_CreatesTokenAndSendsLink(t *testing.T) {

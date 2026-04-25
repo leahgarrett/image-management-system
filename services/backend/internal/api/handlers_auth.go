@@ -22,11 +22,12 @@ type Handlers struct {
 	mailer    mailer.Mailer
 	appURL    string
 	jwtSecret string
+	devMode   bool
 }
 
 // NewHandlers constructs a Handlers instance.
-func NewHandlers(q db.Querier, m mailer.Mailer, appURL, jwtSecret string) *Handlers {
-	return &Handlers{q: q, mailer: m, appURL: appURL, jwtSecret: jwtSecret}
+func NewHandlers(q db.Querier, m mailer.Mailer, appURL, jwtSecret string, devMode bool) *Handlers {
+	return &Handlers{q: q, mailer: m, appURL: appURL, jwtSecret: jwtSecret, devMode: devMode}
 }
 
 // Health is the liveness probe endpoint.
@@ -174,6 +175,7 @@ func (h *Handlers) Verify(w http.ResponseWriter, r *http.Request) {
 		SameSite: http.SameSiteLaxMode,
 		Path:     "/",
 		MaxAge:   int(24 * time.Hour / time.Second),
+		Secure:   !h.devMode,
 	})
 
 	w.Header().Set("Content-Type", "application/json")

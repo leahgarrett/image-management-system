@@ -27,6 +27,6 @@ USER appuser
 # Copy binary from builder
 COPY --from=builder /app/backend .
 
-EXPOSE 8080
+EXPOSE 8081
 
 ENTRYPOINT ["./backend"]

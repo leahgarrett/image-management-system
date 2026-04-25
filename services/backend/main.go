@@ -79,7 +79,7 @@ func main() {
 		m = mailer.NewSMTPMailer(cfg.SMTPHost, cfg.SMTPPort, cfg.SMTPFrom)
 	}
 
-	handlers := api.NewHandlers(queries, m, cfg.AppURL, cfg.JWTSecret)
+	handlers := api.NewHandlers(queries, m, cfg.AppURL, cfg.JWTSecret, cfg.DevMode)
 	router := api.NewRouter(handlers, cfg.JWTSecret)
 
 	srv := &http.Server{
