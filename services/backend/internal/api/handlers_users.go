@@ -166,11 +166,13 @@ func (h *Handlers) Me(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	email, _ := EmailFromContext(r.Context())
 	role, _ := RoleFromContext(r.Context())
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]any{
-		"id":   userID,
-		"role": role,
+		"id":    userID,
+		"email": email,
+		"role":  role,
 	})
 }

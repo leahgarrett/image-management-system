@@ -12,6 +12,7 @@ type contextKey string
 
 const userIDKey contextKey = "userId"
 const roleKey contextKey = "role"
+const emailKey contextKey = "email"
 
 // UserIDFromContext extracts the userId injected by JWTMiddleware.
 func UserIDFromContext(ctx context.Context) (string, bool) {
@@ -33,6 +34,17 @@ func ContextWithUserID(ctx context.Context, userID string) context.Context {
 // ContextWithRole returns a copy of ctx with role stored — exported for tests.
 func ContextWithRole(ctx context.Context, role string) context.Context {
 	return context.WithValue(ctx, roleKey, role)
+}
+
+// EmailFromContext extracts the email injected by JWTMiddleware.
+func EmailFromContext(ctx context.Context) (string, bool) {
+	email, ok := ctx.Value(emailKey).(string)
+	return email, ok && email != ""
+}
+
+// ContextWithEmail returns a copy of ctx with email stored — exported for tests.
+func ContextWithEmail(ctx context.Context, email string) context.Context {
+	return context.WithValue(ctx, emailKey, email)
 }
 
 // JWTMiddleware validates tokens from the Authorization header (Bearer) or the
@@ -79,9 +91,11 @@ func JWTMiddleware(secret string) func(http.Handler) http.Handler {
 			}
 
 			role, _ := claims["role"].(string)
+			email, _ := claims["email"].(string)
 
 			ctx := context.WithValue(r.Context(), userIDKey, userID)
 			ctx = context.WithValue(ctx, roleKey, role)
+			ctx = context.WithValue(ctx, emailKey, email)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
