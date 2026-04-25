@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useEffect, useRef, useState } from 'react'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { Center, Loader, Alert, Stack, Text } from '@mantine/core'
 import { useAuthStore } from './authStore'
 import { apiFetch, ApiError } from '@/api/client'
@@ -9,14 +9,15 @@ export function VerifyPage() {
   const navigate = useNavigate()
   const fetchCurrentUser = useAuthStore((s) => s.fetchCurrentUser)
   const [error, setError] = useState<string | null>(null)
+  const tokenRef = useRef(params.get('token'))
 
   useEffect(() => {
-    const token = params.get('token')
+    const token = tokenRef.current
     if (!token) {
       setError('Missing token in URL.')
       return
     }
-    apiFetch(`/api/v1/auth/verify?token=${encodeURIComponent(token)}`)
+    apiFetch<void>(`/api/v1/auth/verify?token=${encodeURIComponent(token)}`)
       .then(async () => {
         await fetchCurrentUser()
         navigate('/', { replace: true })
@@ -28,19 +29,14 @@ export function VerifyPage() {
           setError('Verification failed. The link may have expired.')
         }
       })
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [fetchCurrentUser, navigate])
 
   if (error) {
     return (
       <Center h="100vh">
         <Stack align="center">
           <Alert color="red" title="Sign-in failed">{error}</Alert>
-          <Text
-            component="a"
-            href="/login"
-            c="blue"
-            size="sm"
-          >
+          <Text component={Link} to="/login" c="blue" size="sm">
             Try again
           </Text>
         </Stack>
