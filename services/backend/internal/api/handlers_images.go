@@ -3,10 +3,13 @@ package api
 import (
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/gorilla/mux"
 	"github.com/leahgarrett/image-management-system/services/backend/internal/db"
 	"github.com/sqlc-dev/pqtype"
 )
@@ -141,4 +144,95 @@ func (h *Handlers) RegisterImage(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(imageToResponse(img, nil, nil))
+}
+
+type paginationResponse struct {
+	Total   int  `json:"total"`
+	Limit   int  `json:"limit"`
+	Offset  int  `json:"offset"`
+	HasMore bool `json:"hasMore"`
+}
+
+type listImagesResponse struct {
+	Data       []imageResponse    `json:"data"`
+	Pagination paginationResponse `json:"pagination"`
+}
+
+// ListImages handles GET /api/v1/images.
+func (h *Handlers) ListImages(w http.ResponseWriter, r *http.Request) {
+	q := r.URL.Query()
+	occasion := q.Get("occasion")
+	limit := 20
+	offset := 0
+	if v := q.Get("limit"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n > 0 {
+			if n > 100 {
+				n = 100
+			}
+			limit = n
+		}
+	}
+	if v := q.Get("offset"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n >= 0 {
+			offset = n
+		}
+	}
+
+	params := db.ListImagesParams{
+		OccasionCategory: sql.NullString{String: occasion, Valid: occasion != ""},
+		Lim:              int32(limit),
+		Off:              int32(offset),
+	}
+
+	images, err := h.q.ListImages(r.Context(), params)
+	if err != nil {
+		writeError(w, r, errInternal("failed to list images"))
+		return
+	}
+
+	data := make([]imageResponse, 0, len(images))
+	for _, img := range images {
+		people, _ := h.q.ListImagePeople(r.Context(), img.ID)
+		tags, _ := h.q.ListImageTags(r.Context(), img.ID)
+		data = append(data, imageToResponse(img, people, tags))
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(listImagesResponse{
+		Data: data,
+		Pagination: paginationResponse{
+			Total:   len(data),
+			Limit:   limit,
+			Offset:  offset,
+			HasMore: len(data) == limit,
+		},
+	})
+}
+
+// GetImage handles GET /api/v1/images/{id}.
+func (h *Handlers) GetImage(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	idStr := vars["id"]
+
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		writeError(w, r, errValidation("invalid image id"))
+		return
+	}
+
+	img, err := h.q.GetImageByID(r.Context(), id)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			writeError(w, r, errNotFound("image not found"))
+			return
+		}
+		writeError(w, r, errInternal("failed to get image"))
+		return
+	}
+
+	people, _ := h.q.ListImagePeople(r.Context(), img.ID)
+	tags, _ := h.q.ListImageTags(r.Context(), img.ID)
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(imageToResponse(img, people, tags))
 }

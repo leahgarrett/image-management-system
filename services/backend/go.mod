@@ -8,3 +8,5 @@ require (
 )
 
 require github.com/sqlc-dev/pqtype v0.3.0
+
+require github.com/gorilla/mux v1.8.1 // indirect

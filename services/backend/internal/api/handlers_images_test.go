@@ -3,10 +3,14 @@ package api_test
 import (
 	"bytes"
 	"context"
+	"database/sql"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
+	"github.com/google/uuid"
+	"github.com/gorilla/mux"
 	"github.com/leahgarrett/image-management-system/services/backend/internal/api"
 	"github.com/leahgarrett/image-management-system/services/backend/internal/db"
 )
@@ -78,5 +82,87 @@ func TestRegisterImage_SetsUploadedByFromContext(t *testing.T) {
 	}
 	if capturedUploadedBy != testUserID {
 		t.Errorf("expected uploadedBy %s, got %s", testUserID, capturedUploadedBy)
+	}
+}
+
+func TestListImages_Returns200WithPagination(t *testing.T) {
+	q := &mockQuerier{
+		listImagesFn: func(ctx context.Context, arg db.ListImagesParams) ([]db.Image, error) {
+			return []db.Image{{ImageID: "img-001"}, {ImageID: "img-002"}}, nil
+		},
+	}
+	h := newTestHandlers(q)
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/images?limit=10&offset=0", nil)
+	ctx := api.ContextWithUserID(req.Context(), "00000000-0000-0000-0000-000000000001")
+	req = req.WithContext(ctx)
+	rr := httptest.NewRecorder()
+	h.ListImages(rr, req)
+	if rr.Code != http.StatusOK {
+		t.Errorf("expected 200, got %d: %s", rr.Code, rr.Body.String())
+	}
+	var resp struct {
+		Data       []interface{}          `json:"data"`
+		Pagination map[string]interface{} `json:"pagination"`
+	}
+	json.NewDecoder(rr.Body).Decode(&resp)
+	if len(resp.Data) != 2 {
+		t.Errorf("expected 2 images, got %d", len(resp.Data))
+	}
+	if resp.Pagination == nil {
+		t.Error("expected pagination in response")
+	}
+}
+
+func TestGetImage_Returns200WithPeopleAndTags(t *testing.T) {
+	imageUUID := uuid.MustParse("00000000-0000-0000-0000-000000000001")
+	q := &mockQuerier{
+		getImageByIDFn: func(ctx context.Context, id uuid.UUID) (db.Image, error) {
+			return db.Image{ID: imageUUID, ImageID: "img-001"}, nil
+		},
+		listImagePeopleFn: func(ctx context.Context, imageID uuid.UUID) ([]db.ImagePerson, error) {
+			return []db.ImagePerson{{Name: "Alice"}, {Name: "Bob"}}, nil
+		},
+		listImageTagsFn: func(ctx context.Context, imageID uuid.UUID) ([]db.Tag, error) {
+			return []db.Tag{{Name: "vacation"}}, nil
+		},
+	}
+	h := newTestHandlers(q)
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/images/"+imageUUID.String(), nil)
+	req = mux.SetURLVars(req, map[string]string{"id": imageUUID.String()})
+	ctx := api.ContextWithUserID(req.Context(), "00000000-0000-0000-0000-000000000001")
+	req = req.WithContext(ctx)
+	rr := httptest.NewRecorder()
+	h.GetImage(rr, req)
+	if rr.Code != http.StatusOK {
+		t.Errorf("expected 200, got %d: %s", rr.Code, rr.Body.String())
+	}
+	var resp map[string]interface{}
+	json.NewDecoder(rr.Body).Decode(&resp)
+	people, _ := resp["people"].([]interface{})
+	if len(people) != 2 {
+		t.Errorf("expected 2 people, got %v", people)
+	}
+	tags, _ := resp["tags"].([]interface{})
+	if len(tags) != 1 {
+		t.Errorf("expected 1 tag, got %v", tags)
+	}
+}
+
+func TestGetImage_NotFound_Returns404(t *testing.T) {
+	q := &mockQuerier{
+		getImageByIDFn: func(ctx context.Context, id uuid.UUID) (db.Image, error) {
+			return db.Image{}, sql.ErrNoRows
+		},
+	}
+	h := newTestHandlers(q)
+	id := "00000000-0000-0000-0000-000000000099"
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/images/"+id, nil)
+	req = mux.SetURLVars(req, map[string]string{"id": id})
+	ctx := api.ContextWithUserID(req.Context(), "00000000-0000-0000-0000-000000000001")
+	req = req.WithContext(ctx)
+	rr := httptest.NewRecorder()
+	h.GetImage(rr, req)
+	if rr.Code != http.StatusNotFound {
+		t.Errorf("expected 404, got %d", rr.Code)
 	}
 }
