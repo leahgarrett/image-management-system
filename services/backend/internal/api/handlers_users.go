@@ -157,3 +157,20 @@ func (h *Handlers) UpdateUserRole(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(userToResponse(user))
 }
+
+// Me handles GET /api/v1/users/me.
+func (h *Handlers) Me(w http.ResponseWriter, r *http.Request) {
+	userID, ok := UserIDFromContext(r.Context())
+	if !ok {
+		writeError(w, r, errUnauthorized("missing auth context"))
+		return
+	}
+
+	role, _ := RoleFromContext(r.Context())
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]any{
+		"id":   userID,
+		"role": role,
+	})
+}

@@ -32,6 +32,8 @@ func NewRouter(h *Handlers, jwtSecret string) http.Handler {
 	api.HandleFunc("/tags", h.ListTags).Methods(http.MethodGet)
 	api.HandleFunc("/tags/suggestions", h.TagSuggestions).Methods(http.MethodGet)
 
+	api.HandleFunc("/users/me", h.Me).Methods(http.MethodGet)
+
 	// Admin-only user management routes.
 	admin := api.PathPrefix("/users").Subrouter()
 	admin.Use(RequireAdmin)
