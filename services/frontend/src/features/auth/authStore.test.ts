@@ -15,7 +15,7 @@ vi.mock('@/api/client', () => ({
 import { apiFetch } from '@/api/client'
 
 beforeEach(() => {
-  useAuthStore.setState({ user: null })
+  useAuthStore.setState({ user: null, isInitialising: false })
   vi.clearAllMocks()
 })
 
@@ -31,6 +31,21 @@ describe('fetchCurrentUser', () => {
     vi.mocked(apiFetch).mockRejectedValue(new ApiError(401, 'Unauthorized'))
     await useAuthStore.getState().fetchCurrentUser()
     expect(useAuthStore.getState().user).toBeNull()
+  })
+
+  it('sets isInitialising to false after fetchCurrentUser resolves', async () => {
+    useAuthStore.setState({ isInitialising: true })
+    vi.mocked(apiFetch).mockResolvedValue({ id: 'u1', email: 'a@b.com', role: 'admin' })
+    await useAuthStore.getState().fetchCurrentUser()
+    expect(useAuthStore.getState().isInitialising).toBe(false)
+  })
+
+  it('sets isInitialising to false on 401', async () => {
+    useAuthStore.setState({ isInitialising: true })
+    const { ApiError } = await import('@/api/client')
+    vi.mocked(apiFetch).mockRejectedValue(new ApiError(401, 'Unauthorized'))
+    await useAuthStore.getState().fetchCurrentUser()
+    expect(useAuthStore.getState().isInitialising).toBe(false)
   })
 })
 

@@ -9,6 +9,7 @@ export interface User {
 
 interface AuthState {
   user: User | null
+  isInitialising: boolean
   requestMagicLink: (email: string) => Promise<void>
   fetchCurrentUser: () => Promise<void>
   logout: () => Promise<void>
@@ -16,6 +17,7 @@ interface AuthState {
 
 export const useAuthStore = create<AuthState>((set) => ({
   user: null,
+  isInitialising: true,
 
   requestMagicLink: async (email: string) => {
     await apiFetch('/api/v1/auth/login', {
@@ -27,16 +29,23 @@ export const useAuthStore = create<AuthState>((set) => ({
   fetchCurrentUser: async () => {
     try {
       const user = await apiFetch<User>('/api/v1/users/me')
-      if (user !== undefined) set({ user })
+      if (user !== undefined) set({ user, isInitialising: false })
+      else set({ isInitialising: false })
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) {
-        set({ user: null })
+        set({ user: null, isInitialising: false })
+      } else {
+        set({ isInitialising: false })
       }
     }
   },
 
   logout: async () => {
-    await apiFetch('/api/v1/auth/logout', { method: 'POST' })
     set({ user: null })
+    try {
+      await apiFetch('/api/v1/auth/logout', { method: 'POST' })
+    } catch {
+      // cookie may remain valid server-side; local state cleared regardless
+    }
   },
 }))
