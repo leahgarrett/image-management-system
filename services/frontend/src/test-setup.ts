@@ -1,6 +1,13 @@
 import { vi } from 'vitest'
 import '@testing-library/jest-dom'
 
+// jsdom does not implement ResizeObserver — mock it for Mantine ScrollArea / Combobox
+global.ResizeObserver = vi.fn().mockImplementation(() => ({
+  observe: vi.fn(),
+  unobserve: vi.fn(),
+  disconnect: vi.fn(),
+}))
+
 // jsdom does not implement window.matchMedia — mock it for Mantine
 Object.defineProperty(window, 'matchMedia', {
   writable: true,

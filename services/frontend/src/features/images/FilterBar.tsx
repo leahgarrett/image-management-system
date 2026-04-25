@@ -2,7 +2,6 @@ import { Group, TagsInput, TextInput, Select, Button } from '@mantine/core'
 import { useFilterStore } from './filterStore'
 
 const OCCASION_OPTIONS = [
-  { value: '', label: 'Any occasion' },
   { value: 'birthday', label: 'Birthday' },
   { value: 'wedding', label: 'Wedding' },
   { value: 'graduation', label: 'Graduation' },
@@ -48,9 +47,11 @@ export function FilterBar() {
       />
       <Select
         label="Occasion"
+        placeholder="Any occasion"
         data={OCCASION_OPTIONS}
-        value={occasion}
+        value={occasion || null}
         onChange={(v) => setOccasion(v ?? '')}
+        clearable
         style={{ minWidth: 180 }}
       />
       {hasFilters && (
