@@ -77,6 +77,57 @@ func TestInviteUser_Returns201(t *testing.T) {
 	}
 }
 
+func TestMe_HappyPath(t *testing.T) {
+	h := newTestHandlers(&mockQuerier{})
+	ctx := api.ContextWithUserID(context.Background(), "user-123")
+	ctx = api.ContextWithRole(ctx, "admin")
+	ctx = api.ContextWithEmail(ctx, "user@example.com")
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/users/me", nil).WithContext(ctx)
+	rr := httptest.NewRecorder()
+	h.Me(rr, req)
+	if rr.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d", rr.Code)
+	}
+	var body map[string]any
+	json.NewDecoder(rr.Body).Decode(&body)
+	if body["id"] != "user-123" {
+		t.Errorf("id: got %v, want user-123", body["id"])
+	}
+	if body["email"] != "user@example.com" {
+		t.Errorf("email: got %v, want user@example.com", body["email"])
+	}
+	if body["role"] != "admin" {
+		t.Errorf("role: got %v, want admin", body["role"])
+	}
+}
+
+func TestMe_MissingUserID_Returns401(t *testing.T) {
+	h := newTestHandlers(&mockQuerier{})
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/users/me", nil)
+	rr := httptest.NewRecorder()
+	h.Me(rr, req)
+	if rr.Code != http.StatusUnauthorized {
+		t.Errorf("expected 401, got %d", rr.Code)
+	}
+}
+
+func TestMe_EmptyEmailAndRole_Returns200(t *testing.T) {
+	h := newTestHandlers(&mockQuerier{})
+	ctx := api.ContextWithUserID(context.Background(), "user-abc")
+	// no email or role in context — simulates JWT issued without those claims
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/users/me", nil).WithContext(ctx)
+	rr := httptest.NewRecorder()
+	h.Me(rr, req)
+	if rr.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d: %s", rr.Code, rr.Body.String())
+	}
+	var body map[string]any
+	json.NewDecoder(rr.Body).Decode(&body)
+	if body["id"] != "user-abc" {
+		t.Errorf("id: got %v", body["id"])
+	}
+}
+
 func TestUpdateRole_Returns200(t *testing.T) {
 	userUUID := uuid.MustParse("00000000-0000-0000-0000-000000000002")
 	q := &mockQuerier{

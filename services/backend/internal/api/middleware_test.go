@@ -17,6 +17,7 @@ func makeToken(t *testing.T, secret string, userID, role string, exp time.Time) 
 	claims := jwt.MapClaims{
 		"userId": userID,
 		"role":   role,
+		"email":  "test@example.com",
 		"exp":    exp.Unix(),
 	}
 	tok, err := jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString([]byte(secret))
@@ -36,6 +37,10 @@ func TestJWTMiddleware_ValidToken_PassesThrough(t *testing.T) {
 		role, ok := api.RoleFromContext(r.Context())
 		if !ok || role != "contributor" {
 			t.Errorf("expected role contributor, got %q ok=%v", role, ok)
+		}
+		email, ok := api.EmailFromContext(r.Context())
+		if !ok || email != "test@example.com" {
+			t.Errorf("expected email test@example.com, got %q ok=%v", email, ok)
 		}
 		w.WriteHeader(http.StatusOK)
 	}))
