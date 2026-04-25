@@ -7,7 +7,7 @@ import { ImageGrid } from './ImageGrid'
 import type { ImageListResponse } from './types'
 
 export function BrowsePage() {
-  const toQueryString = useFilterStore((s) => s.toQueryString)
+  const qs = useFilterStore((s) => s.toQueryString())
   const offset = useFilterStore((s) => s.offset)
   const nextPage = useFilterStore((s) => s.nextPage)
   const prevPage = useFilterStore((s) => s.prevPage)
@@ -20,7 +20,7 @@ export function BrowsePage() {
     let cancelled = false
     setLoading(true)
     setError(null)
-    apiFetch<ImageListResponse>(`/api/v1/images?${toQueryString()}`)
+    apiFetch<ImageListResponse>(`/api/v1/images?${qs}`)
       .then((data) => {
         if (!cancelled) {
           setResponse(data ?? null)
@@ -34,7 +34,7 @@ export function BrowsePage() {
         }
       })
     return () => { cancelled = true }
-  }, [toQueryString])
+  }, [qs])
 
   const images = response?.data ?? []
   const pagination = response?.pagination
