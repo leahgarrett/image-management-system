@@ -12,7 +12,7 @@ export class ApiError extends Error {
 export async function apiFetch<T>(
   path: string,
   init: RequestInit = {},
-): Promise<T> {
+): Promise<T | undefined> {
   const res = await fetch(path, {
     ...init,
     credentials: 'include',
@@ -35,6 +35,6 @@ export async function apiFetch<T>(
     throw new ApiError(res.status, detail, type)
   }
 
-  if (res.status === 204) return undefined as T
+  if (res.status === 204) return undefined
   return res.json() as Promise<T>
 }
