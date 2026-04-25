@@ -12,7 +12,7 @@ describe('apiFetch', () => {
       new Response(JSON.stringify({ id: '1' }), { status: 200 })
     )
     const result = await apiFetch<{ id: string }>('/api/v1/images')
-    expect(result.id).toBe('1')
+    expect(result?.id).toBe('1')
   })
 
   it('throws ApiError with status and detail on non-2xx', async () => {
