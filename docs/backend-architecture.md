@@ -234,9 +234,32 @@ Magic link auth remains the right choice — passwordless is better UX for famil
 
 **Go Libraries:**
 - `golang-jwt/jwt/v5` — JWT generation/verification (already used in ingestion service)
-- `net/smtp` or AWS SES SDK — email delivery
+- `net/smtp` — email delivery (used with Amazon SES SMTP interface — see below)
 - `golang.org/x/crypto` — token hashing (bcrypt or SHA-256)
 - `golang.org/x/time/rate` — rate limiting magic link requests
+
+### Email Delivery: Amazon SES
+
+**Decision:** Use Amazon SES via its SMTP interface — not a self-hosted SMTP server.
+
+The backend already accepts SMTP configuration via environment variables (`SMTP_HOST`, `SMTP_PORT`, `SMTP_FROM`). Point these at SES and no code changes are needed.
+
+**Cost:** $0.10 per 1,000 emails. At realistic usage for a family app (tens to low hundreds of magic links per month), this is effectively free.
+
+**Production config:**
+```
+SMTP_HOST=email-smtp.us-east-1.amazonaws.com
+SMTP_PORT=587
+SMTP_FROM=photos@yourdomain.com
+```
+
+SES SMTP credentials are generated separately from AWS access keys (IAM → SES → SMTP credentials).
+
+**SES sandbox:** New SES accounts start in sandbox mode and can only send to verified addresses. Request production access via the AWS console — typically approved within 1–2 days.
+
+**Required DNS records** on your sending domain: SPF, DKIM (provided by SES), and DMARC. SES walks through these during domain verification.
+
+**Why not self-hosted SMTP (e.g. Postfix on EC2)?** ~$10/month in infrastructure plus ownership of IP reputation, bounce handling, and deliverability. Not worth it for a low-volume private app.
 
 ---
 
